@@ -183,6 +183,8 @@ class RemovebackgroundWindow(QtWidgets.QWidget):
         elif self.histogram_radio_button.isChecked():
             config.rb_line_type = 4
 
+     #test
+
         self.update_image()
 
     def update_direction(self, index):
