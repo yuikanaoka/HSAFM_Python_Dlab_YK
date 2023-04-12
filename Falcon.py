@@ -42,7 +42,6 @@ import config
 import lineprofile as lp
 import removebackground as rb
 import noisefilter as nf
-import setting as st
 
 
 class MainWindow(QMainWindow):
@@ -95,7 +94,7 @@ class MainWindow(QMainWindow):
 
         self.panelsetting = QAction("&Panel Setting", self)
         self.panelsetting.setShortcut("Ctrl+P")
-        self.panelsetting.triggered.connect(st.panel_setting)
+        self.panelsetting.triggered.connect(self.getPanelSize)
 
         self.foldersetting = QAction("&Folder Setting", self)
         self.foldersetting.setShortcut("Ctrl+F")
@@ -507,6 +506,38 @@ class MainWindow(QMainWindow):
         self.comment.setText(config.Comment)
 
    
+    def getPanelSize(self):
+        for widget in QApplication.topLevelWidgets():
+            if isinstance(widget, QWidget):
+                 title = widget.windowTitle()
+                 height = widget.geometry().height()
+                 width = widget.geometry().width()
+                 left = widget.geometry().left()
+                 top = widget.geometry().top()
+
+                 if title == "FalconPy Main":
+                    mainpanel = config.PanelSize(height, width, left, top)
+                 elif title == "img1ch":
+                    img1ch = config.PanelSize(height, width, left, top)                     
+                 elif title == "Remove Background":
+                    backgroundpanel = config.PanelSize(height, width, left, top)
+                 elif title == "Noise Filters":
+                    noisefilterpanel = config.PanelSize(height, width, left, top)
+            
+            self.save_panel_sizes()
+                     
+    def save_panel_sizes():
+        with open("params.txt", "w") as f:
+            for panel in ["FalconPy Main", "img1ch", "Remove Background", "Noise Filters"]:
+                for widget in QApplication.topLevelWidgets():
+                    if isinstance(widget, QWidget) and widget.windowTitle() == panel:
+                        height = widget.geometry().height()
+                        width = widget.geometry().width()
+                        left = widget.geometry().left()
+                        top = widget.geometry().top()
+                        panel_size = config.PanelSize(height, width, left, top)
+                        f.write(f"{panel}: {panel_size.height} {panel_size.width} {panel_size.left} {panel_size.top}\n")
+                    break
 
     def SetF_SliderValue(self,value):
         # self.frameSlider.setValue(value)
