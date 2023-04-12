@@ -1,3 +1,13 @@
+# -------------------------------------------------------------------------------
+# Name:        noisegfilter.py
+# Purpose:
+#
+# Author:      Uchihashi
+#
+# Created:     27/02/2018
+# Copyright:   (c) Uchihashi 2018
+# Licence:     <your licence>
+# -------------------------------------------------------------------------------
 import config
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
