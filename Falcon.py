@@ -1,5 +1,5 @@
 # -------------------------------------------------------------------------------
-# Name:        module1
+# Name:        Falcon.py
 # Purpose:
 #
 # Author:      Uchihashi
@@ -81,10 +81,7 @@ class MainWindow(QMainWindow):
 
            
 
-        self.lineprofile = QAction("&Line", self)
-        self.lineprofile.setShortcut("Ctrl+L")
-        self.lineprofile.triggered.connect(self.MakeLineWindow)
-
+        
         self.removebackground = QAction("&Remove background", self)
         self.removebackground.setShortcut("Ctrl+B")
         self.removebackground.triggered.connect(self.MakeRemovebackgroundWindow)
@@ -93,6 +90,15 @@ class MainWindow(QMainWindow):
         self.noisefilter = QAction("&Noise Filter", self)
         self.noisefilter.setShortcut("Ctrl+N")
         self.noisefilter.triggered.connect(self.MakeNoiseFilterWindow)
+
+        self.lineprofile = QAction("&Line", self)
+        self.lineprofile.setShortcut("Ctrl+L")
+        self.lineprofile.triggered.connect(self.MakeLineWindow)
+
+        self.Setting = QAction("&Setting", self)
+        self.Setting.setShortcut("Ctrl+S")
+        self.Setting.triggered.connect(self.MakeSettingWindow)
+
        
         
         menubar = self.menuBar()
@@ -102,6 +108,9 @@ class MainWindow(QMainWindow):
 
         fileMenu = menubar.addMenu('&Analysis')
         fileMenu.addAction(self.lineprofile)
+
+        ileMenu = menubar.addMenu('&Setting')
+        fileMenu.addAction(self.setting)
      
 
 
@@ -661,6 +670,10 @@ class MainWindow(QMainWindow):
     def MakeNoiseFilterWindow(self):
         self.Noisefilterwindow=nf.NoisefilterWindow()
         self.Noisefilterwindow.show()
+    
+    def MakeSettingWindow(self):
+        self.Settingwindow=st.SettingWindow()
+        self.Settingwindow.show()
 
        
 
