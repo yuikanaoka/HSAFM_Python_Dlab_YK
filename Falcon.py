@@ -99,8 +99,7 @@ class MainWindow(QMainWindow):
 
         self.foldersetting = QAction("&Folder Setting", self)
         self.foldersetting.setShortcut("Ctrl+F")
-        setting = st.SettingWindow()  # SettingWindowクラスをインスタンス化
-        self.foldersetting.triggered.connect(setting.initialfolder_setting)
+        self.foldersetting.triggered.connect(self.initialfolder_setting)
       
         
         menubar = self.menuBar()
@@ -116,12 +115,6 @@ class MainWindow(QMainWindow):
         fileMenu.addAction(self.foldersetting)
         fileMenu.addAction(self.panelsetting)
         
-
-
-
-     
-
-
     
     def createCentralWidget(self):
         """ Constructs a central widget for the window consisting of a two-by-two
@@ -371,6 +364,19 @@ class MainWindow(QMainWindow):
         layout.addStretch(20)
 
         self.commentGroup.setLayout(layout)
+    
+    def initialfolder_setting(self):
+        app = QApplication.instance()
+        if app is None:
+            app = QApplication([])
+
+        dirname = QFileDialog.getExistingDirectory(self,
+                                                   'open folder',
+                                                   config.initialdata_folder,
+                                                   QFileDialog.ShowDirsOnly)
+        
+        if dirname is not None and dirname != "":
+            config.initialdata_folder = dirname 
 
     def show_folder_dialog(self):
         ''' open dialog and set to foldername '''
@@ -387,6 +393,7 @@ class MainWindow(QMainWindow):
             self.step = 0
 
         self.file_open()
+
 
     def openHeaderOfFile(self, row, column):
         # item = self.filesTable.item(row, 0)
