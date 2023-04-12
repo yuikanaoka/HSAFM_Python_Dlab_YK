@@ -42,6 +42,7 @@ import config
 import lineprofile as lp
 import removebackground as rb
 import noisefilter as nf
+import setting as st
 
 
 class MainWindow(QMainWindow):
@@ -671,7 +672,7 @@ class MainWindow(QMainWindow):
         self.Noisefilterwindow=nf.NoisefilterWindow()
         self.Noisefilterwindow.show()
     
-    def MakeSettingWindow(self):
+    def  MakeSettingWindow(self):
         self.Settingwindow=st.SettingWindow()
         self.Settingwindow.show()
 

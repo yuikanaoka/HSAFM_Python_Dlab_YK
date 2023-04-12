@@ -33,6 +33,7 @@ mainpanel = PanelSize(900, 400, 10, dspH-500)
 # panels for image processing
 backgroundpanel = PanelSize(300, 200, 10, dspH-500)
 noisefilterpanel = PanelSize(400, 400, 10, dspH-500)
+settingpanel = PanelSize(200, 200, 10, dspH-500)
 #Panelsize.mainpanel = Panelsize(mainpanel_width, mainpanel_height, mainpanel_left, mainpanel_top)
 
 FileType = None
