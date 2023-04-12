@@ -49,10 +49,10 @@ class RemovebackgroundWindow(QtWidgets.QWidget):
         self.setWindowTitle("Remove Background")
 
         self.main_layout = QVBoxLayout()
-
+        
         # Plane group box
         self.plane_group_box = QGroupBox("Plane")
-        self.plane_group_box.setFixedSize(200, 50)
+        self.plane_group_box.setFixedSize(250, 100)
         self.plane_layout = QHBoxLayout()
         
         self.rb_auto_checkbox = QCheckBox("Auto")
@@ -77,31 +77,32 @@ class RemovebackgroundWindow(QtWidgets.QWidget):
 
         # Line-by-Line group box
         self.line_by_line_group_box = QGroupBox("Line-by-Line")
-        self.line_by_line_group_box.setFixedSize(200, 150)
+        self.line_by_line_group_box.setFixedSize(250, 200)
         self.line_by_line_layout = QVBoxLayout()
 
         # Add combo box for selecting direction
         self.direction_combo_box = QComboBox()
         self.direction_combo_box.addItem("Horizontal")
         self.direction_combo_box.addItem("Vertical")
+        self.direction_combo_box.setFixedWidth(150)
         self.direction_combo_box.setCurrentText(config.rb_line_direction)  # rb_line_directionに応じて初期値を設定
         self.direction_combo_box.currentIndexChanged.connect(self.update_direction)
-        self.line_by_line_layout.addWidget(self.direction_combo_box)
         
+        self.line_by_line_layout.addWidget(self.direction_combo_box)
+         
         self.off_radio_button = QRadioButton("Off")
         self.off_radio_button.toggled.connect(self.update_rb_line_type)
         self.line_by_line_layout.addWidget(self.off_radio_button)
+        
 
         self.polynomial_order_layout = QHBoxLayout()
-        #self.polynomial_order_layout.setSpacing(10)  # ここでスペーシングを調整
+        self.polynomial_order_layout.setSpacing(1)  # ここでスペーシングを調整
         self.polynomial_radio_button = QRadioButton("Polynomial")
         self.polynomial_radio_button.toggled.connect(self.update_rb_line_type)
 
         
         self.polynomial_order_layout.addWidget(self.polynomial_radio_button)
-
-        self.polynomial_order_layout.addSpacing(1)  # ここにスペースを追加
-
+      
         self.line_order_label= QLabel("Order")
         self.line_order_spin_box = QSpinBox()
         self.line_order_spin_box.setSingleStep(1)
@@ -111,11 +112,12 @@ class RemovebackgroundWindow(QtWidgets.QWidget):
        
 
         self.line_order_layout = QHBoxLayout()
-        self.line_order_layout.setSpacing(2)  # ここでスペーシングを調整
+        
         self.line_order_layout.addWidget(self.line_order_label)
-        self.line_order_layout.addWidget(self.line_order_spin_box)
+        self.line_order_layout.addWidget(self.line_order_spin_box)    
 
         self.polynomial_order_layout.addLayout(self.line_order_layout)
+        
         self.line_by_line_layout.addLayout(self.polynomial_order_layout)
 
         self.median_radio_button = QRadioButton("Median")

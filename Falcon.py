@@ -79,13 +79,10 @@ class MainWindow(QMainWindow):
             the menu is checked to reflect the default brightness.
             メニューバーの作成
         """
-
-           
-
         
-        self.removebackground = QAction("&Remove background", self)
+        self.removebackground = QAction("&Remove Background", self)
         self.removebackground.setShortcut("Ctrl+B")
-        self.removebackground.triggered.connect(self.MakeRemovebackgroundWindow)
+        self.removebackground.triggered.connect(self.MakeRemoveBackgroundWindow)
        
 
         self.noisefilter = QAction("&Noise Filter", self)
@@ -96,11 +93,15 @@ class MainWindow(QMainWindow):
         self.lineprofile.setShortcut("Ctrl+L")
         self.lineprofile.triggered.connect(self.MakeLineWindow)
 
-        self.Setting = QAction("&Setting", self)
-        self.Setting.setShortcut("Ctrl+S")
-        self.Setting.triggered.connect(self.MakeSettingWindow)
+        self.panelsetting = QAction("&Panel Setting", self)
+        self.panelsetting.setShortcut("Ctrl+P")
+        self.panelsetting.triggered.connect(st.panel_setting)
 
-       
+        self.foldersetting = QAction("&Folder Setting", self)
+        self.foldersetting.setShortcut("Ctrl+F")
+        setting = st.SettingWindow()  # SettingWindowクラスをインスタンス化
+        self.foldersetting.triggered.connect(setting.initialfolder_setting)
+      
         
         menubar = self.menuBar()
         fileMenu = menubar.addMenu('&Image Processing')
@@ -110,8 +111,14 @@ class MainWindow(QMainWindow):
         fileMenu = menubar.addMenu('&Analysis')
         fileMenu.addAction(self.lineprofile)
 
-        ileMenu = menubar.addMenu('&Setting')
-        fileMenu.addAction(self.setting)
+        
+        fileMenu = menubar.addMenu('&Setting')
+        fileMenu.addAction(self.foldersetting)
+        fileMenu.addAction(self.panelsetting)
+        
+
+
+
      
 
 
@@ -367,10 +374,10 @@ class MainWindow(QMainWindow):
 
     def show_folder_dialog(self):
         ''' open dialog and set to foldername '''
-        initial_dir = 'Q:\AFM Data'
+        
         dirname = QFileDialog.getExistingDirectory(self,
                                                    'open folder',
-                                                  initial_dir, #os.path.expanduser('.'),
+                                                  config.initialdata_folder , #os.path.expanduser('.'),
                                                    QFileDialog.ShowDirsOnly)
 
         if dirname:
@@ -428,6 +435,8 @@ class MainWindow(QMainWindow):
         # self.files = []
         if os.path.exists(self.dirname):
             # try:
+
+            #print(self.dirname)
 
             QApplication.setOverrideCursor(Qt.WaitCursor)
             config.files = self.fileList.setup(self.dirname, '.asd')
@@ -663,7 +672,7 @@ class MainWindow(QMainWindow):
             dl.MakeProfileWindow()
             dl.MouseSet("img1ch")
     
-    def MakeRemovebackgroundWindow(self):
+    def MakeRemoveBackgroundWindow(self):
         self.Removebackgroundwindow=rb.RemovebackgroundWindow()
         self.Removebackgroundwindow.show()
 
@@ -672,9 +681,9 @@ class MainWindow(QMainWindow):
         self.Noisefilterwindow=nf.NoisefilterWindow()
         self.Noisefilterwindow.show()
     
-    def  MakeSettingWindow(self):
-        self.Settingwindow=st.SettingWindow()
-        self.Settingwindow.show()
+    #def  MakeSettingWindow(self):
+    #    self.Foldersettingwindow=st.FoldersettingWindow()
+    #    self.Foldersettingwindow.show()
 
        
 
