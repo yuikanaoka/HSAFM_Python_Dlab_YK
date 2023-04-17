@@ -12,13 +12,6 @@ import numpy as np
 from PyQt5.QtWidgets import QApplication
 import sys
 
-class PanelSize:
-    def __init__(self, width, height, left, top):
-        self.width = width
-        self.height = height
-        self.left = left
-        self.top = top
-
 
 # information of desktop
 app = QApplication(sys.argv)
@@ -28,12 +21,10 @@ dspH = size.height()
 dspW = size.width()
 
 #  panel size definition
-mainpanel = PanelSize(900, 400, 10, dspH-500)
-
-# panels for image processing
-backgroundpanel = PanelSize(300, 400, 10, dspH-500)
-noisefilterpanel = PanelSize(400, 400, 10, dspH-500)
-#Panelsize.mainpanel = Panelsize(mainpanel_width, mainpanel_height, mainpanel_left, mainpanel_top)
+panel_width = 300
+panel_height = 400
+panel_top =10
+panel_left =30
 
 FileType = None
 FileHeaderSize = None
@@ -103,7 +94,7 @@ DispMode = 1
 pbSpeed = 1
 
 # file open parameters
-initialdata_folder = "/Volumes/Lacie 16TB/AFM Data"
+data_folder = "/Volumes/Lacie 16TB/AFM Data"
 
 # Remove bacgorund parameters
 rb_plane_auto = 0
@@ -132,3 +123,44 @@ linewindow=None
 figure=None
 axes=None
 
+def save_params(type, name, variable):
+        with open("FalconViewer.parm", "r+") as file:
+            lines = file.readlines()
+            file.seek(0)
+            for line in lines:
+                data = line.strip().split(",")
+                if data[0] == type and data[1] == name :
+                    if type == "panel":
+                        # 一致する行が見つかった場合は、3, 4, 5, 6列目に値を書き込む
+                        file.write(f"{type},{name},{config.panel_left},{config.panel_top},{config.panel_width},{config.panel_height}\n")
+                    elif type =="param" :
+                        file.write(f"{type},{name},{variable}\n")
+
+                        
+                else:
+                    # 一致しない場合は、そのまま書き込む
+                    file.write(line)
+            file.truncate()
+
+def get_savedparam(type, name):
+    with open("FalconViewer.parm", "r") as file:
+        data = None  # デフォルト値を設定
+        for line in file:
+            # 行をカンマで分割して、最初の要素がtypeと一致するかをチェックする
+            if line.strip().split(",")[0] == type:
+                if type == "panel":
+                    # 2番目の要素がnameと一致するかをチェックする
+                    if line.strip().split(",")[1] == name:
+                        # 3番目の要素を返す
+                        data = line.strip().split(",")
+                        return [int(data[i]) for i in range(2, 6)]
+
+                if type == "param":
+                    # 2番目の要素がnameと一致するかをチェックする
+                    if line.strip().split(",")[1] == name:
+                        # 3番目の要素を返す
+                        data = line.strip().split(",")
+                        return data[2]
+
+        # 一致する行が見つからない場合は、Noneを返す
+        return None

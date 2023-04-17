@@ -26,7 +26,7 @@ from PyQt5.QtWidgets import (QWidget, QApplication, QPushButton, QLineEdit,
                              QFileDialog, QMainWindow, QMessageBox, QTextEdit, QMenu, QFrame, )
 from PyQt5.QtGui import (QDesktopServices, QKeySequence,QPainter,QPen)
 
-from config import mainpanel
+
 
 import numpy as np
 import time
@@ -66,6 +66,8 @@ class MainWindow(QMainWindow):
 
         self.createMenus()
         self.setCentralWidget(self.createCentralWidget())
+
+        config.data_folder = config.get_savedparam("param", "initialdata_folder")
 
         
         
@@ -124,10 +126,18 @@ class MainWindow(QMainWindow):
 
         frame = QFrame(self)
         
-       
+        result = config.get_savedparam("panel", "FalconPy Main")
+        if result is not None:
+          # 一致する行が見つかった場合は、resultを処理する
+           config.panel_left, config.panel_top, config.panel_width, config.panel_height = result
+        else:
+            config.panel_width= 300
+            config.panel_height = 200
+            config.panel_top = 100
+            config.panel_left = 100
         
-        self.resize(mainpanel.width, mainpanel.height)
-        self.move(mainpanel.left, mainpanel.top)
+        self.resize(config.panel_width, config.panel_height)
+        self.move(config.panel_left, config.panel_top)
 
         self.setWindowTitle('FalconPy Main')
         self.crFileControls("Select Files")
@@ -371,18 +381,20 @@ class MainWindow(QMainWindow):
 
         dirname = QFileDialog.getExistingDirectory(self,
                                                    'open folder',
-                                                   config.initialdata_folder,
+                                                   config.data_folder,
                                                    QFileDialog.ShowDirsOnly)
         
         if dirname is not None and dirname != "":
-            config.initialdata_folder = dirname 
+            config.data_folder = dirname 
+        
+            config.save_params("param", "initialdata_folder", config.data_folder)
 
     def show_folder_dialog(self):
         ''' open dialog and set to foldername '''
         
         dirname = QFileDialog.getExistingDirectory(self,
                                                    'open folder',
-                                                  config.initialdata_folder , #os.path.expanduser('.'),
+                                                  config.data_folder , #os.path.expanduser('.'),
                                                    QFileDialog.ShowDirsOnly)
 
         if dirname:
@@ -510,34 +522,63 @@ class MainWindow(QMainWindow):
         for widget in QApplication.topLevelWidgets():
             if isinstance(widget, QWidget):
                  title = widget.windowTitle()
-                 height = widget.geometry().height()
-                 width = widget.geometry().width()
-                 left = widget.geometry().left()
-                 top = widget.geometry().top()
+                 config.panel_height = widget.geometry().height()
+                 config.panel_width= widget.geometry().width()
+                 config.panel_left = widget.geometry().left()
+                 config.panel_top = widget.geometry().top()
 
-                 if title == "FalconPy Main":
-                    mainpanel = config.PanelSize(height, width, left, top)
-                 elif title == "img1ch":
-                    img1ch = config.PanelSize(height, width, left, top)                     
-                 elif title == "Remove Background":
-                    backgroundpanel = config.PanelSize(height, width, left, top)
-                 elif title == "Noise Filters":
-                    noisefilterpanel = config.PanelSize(height, width, left, top)
+                 
+                 config.save_params("panel",title, 0)               
+ 
+            # result = self.get_savedparam("panel", "FalconPy Main")
+
+            # if result is not None:
+            #     # 一致する行が見つかった場合は、resultを処理する
+            #     val2, val3, val4, val5 = result
+            #     print(f"2列目の値: {val2}")
+            #     print(f"3列目の値: {val3}")
+            #     print(f"4列目の値: {val4}")
+            #     print(f"5列目の値: {val5}")
+            # else:
+            #     pass
             
-            self.save_panel_sizes()
-                     
-    def save_panel_sizes():
-        with open("params.txt", "w") as f:
-            for panel in ["FalconPy Main", "img1ch", "Remove Background", "Noise Filters"]:
-                for widget in QApplication.topLevelWidgets():
-                    if isinstance(widget, QWidget) and widget.windowTitle() == panel:
-                        height = widget.geometry().height()
-                        width = widget.geometry().width()
-                        left = widget.geometry().left()
-                        top = widget.geometry().top()
-                        panel_size = config.PanelSize(height, width, left, top)
-                        f.write(f"{panel}: {panel_size.height} {panel_size.width} {panel_size.left} {panel_size.top}\n")
-                    break
+            # with open("falconviewer.parm", "w") as file:
+            #     # ファイルの最初の行に"FalconPy Main", 0, 1, 2, 3を書き込む
+            #     file.write("FalconPy Main, 0, 1, 2, 3\n")
+    
+            #     # 2行目に"Test", 1, 2, 3, 4を書き込む
+            #     file.write("Test, 1, 2, 3, 4\n")
+
+            #ファイルを読み込んで一行ずつ処理する
+            # with open("Falconviewer.parm", "r") as file:
+            #     lines = file.readlines()
+
+            # # 行ごとに処理する
+            # for i, line in enumerate(lines):
+    
+            #     # 行に"Test"が含まれている場合
+            #     if "Test" in line:
+        
+            #         # 行をカンマで分割し、3番目の数値を100に変更する
+            #         parts = line.strip().split(",")
+            #         parts[2] = "30"
+        
+            #         # 変更後の行を作成する
+            #         new_line = ",".join(parts) + "\n"
+        
+            #         # 変更後の行に置き換える
+            #         lines[i] = new_line
+
+            # # ファイルを書き込みモードで開いて、変更後の内容を書き込む
+            # with open("Falconviewer.parm", "w") as file:
+            #     file.writelines(lines)
+
+
+
+    
+
+    
+
 
     def SetF_SliderValue(self,value):
         # self.frameSlider.setValue(value)

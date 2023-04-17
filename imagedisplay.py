@@ -44,6 +44,8 @@ class ImageDisplay:
 
         #config.aryData = config.ZaryData 
 
+        config.ZaryData = np.array(config.RawaryData)
+        
         if config.rb_plane_auto == 1:
             rb.Removebackrgoud_Plane()
 
@@ -100,6 +102,16 @@ class ImageDisplay:
         #cv2.namedWindow("img1ch", cv2.WINDOW_KEEPRATIO | cv2.WINDOW_NORMAL)
         #cv2.imread(config.dspimg)
         cv2.imshow("img1ch", config.dspimg)
+
+        result = config.get_savedparam("panel","img1ch")
+        if result is not None:
+          # 一致する行が見つかった場合は、resultを処理する
+           config.panel_left, config.panel_top, config.panel_width, config.panel_height = result
+        else:
+            config.panel_top = 10
+            config.panel_left = 10
+
+        cv2.moveWindow("img1ch", config.panel_left, config.panel_top)
         #print(config.ZaryData.shape)
         #print(config.ZaryData[0][0])
         #print(np.max(config.aryData))
