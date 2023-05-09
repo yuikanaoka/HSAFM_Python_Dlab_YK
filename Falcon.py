@@ -42,6 +42,7 @@ import config
 import lineprofile as lp
 import removebackground as rb
 import noisefilter as nf
+import tipsampledilation as tsd
 
 
 class MainWindow(QMainWindow):
@@ -101,6 +102,10 @@ class MainWindow(QMainWindow):
         self.foldersetting = QAction("&Folder Setting", self)
         self.foldersetting.setShortcut("Ctrl+F")
         self.foldersetting.triggered.connect(self.initialfolder_setting)
+
+        self.tipsampledilation = QAction("&Tip Sample Dilation", self)
+        self.tipsampledilation.setShortcut("Ctrl+T")
+        self.tipsampledilation.triggered.connect(self.MakeTipSampleDilationWindow)
       
         
         menubar = self.menuBar()
@@ -110,6 +115,10 @@ class MainWindow(QMainWindow):
 
         fileMenu = menubar.addMenu('&Analysis')
         fileMenu.addAction(self.lineprofile)
+
+        fileMenu = menubar.addMenu('&Simulation')
+        fileMenu.addAction(self.tipsampledilation)
+        
 
         
         fileMenu = menubar.addMenu('&Setting')
@@ -760,10 +769,9 @@ class MainWindow(QMainWindow):
         self.Noisefilterwindow=nf.NoisefilterWindow()
         self.Noisefilterwindow.show()
     
-    #def  MakeSettingWindow(self):
-    #    self.Foldersettingwindow=st.FoldersettingWindow()
-    #    self.Foldersettingwindow.show()
-
+    def MakeTipSampleDilationWindow(self):
+        self.TipSampleDilationWindow=tsd.TipSampleDilationWindow()
+        self.TipSampleDilationWindow.show()
        
 
 class FrameUpData(QThread):
