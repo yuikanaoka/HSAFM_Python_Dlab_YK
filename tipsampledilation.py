@@ -1,5 +1,5 @@
 # -------------------------------------------------------------------------------
-# Name:        simulation.py
+# Name:        tipsampledilation.py
 # Purpose:     for afm simulation
 #
 # Author:      Kanaoka
