@@ -123,6 +123,10 @@ linewindow=None
 figure=None
 axes=None
 
+
+# afm simulation
+pdbdata = None
+
 def save_params(type, name, variable):
         with open("FalconViewer.parm", "r+") as file:
             lines = file.readlines()
@@ -132,7 +136,7 @@ def save_params(type, name, variable):
                 if data[0] == type and data[1] == name :
                     if type == "panel":
                         # 一致する行が見つかった場合は、3, 4, 5, 6列目に値を書き込む
-                        file.write(f"{type},{name},{config.panel_left},{config.panel_top},{config.panel_width},{config.panel_height}\n")
+                        file.write(f"{type},{name},{panel_left},{panel_top},{panel_width},{panel_height}\n")
                     elif type =="param" :
                         file.write(f"{type},{name},{variable}\n")
 

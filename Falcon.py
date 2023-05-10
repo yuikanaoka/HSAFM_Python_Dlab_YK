@@ -106,6 +106,8 @@ class MainWindow(QMainWindow):
         self.tipsampledilation = QAction("&Tip Sample Dilation", self)
         self.tipsampledilation.setShortcut("Ctrl+T")
         self.tipsampledilation.triggered.connect(self.MakeTipSampleDilationWindow)
+        self.tipsampledilation.triggered.connect(self.MakeSimulationWindow)
+        #self.tipsampledilation.triggered.connect(self.MakePDBWindow)
       
         
         menubar = self.menuBar()
@@ -772,6 +774,14 @@ class MainWindow(QMainWindow):
     def MakeTipSampleDilationWindow(self):
         self.TipSampleDilationWindow=tsd.TipSampleDilationWindow()
         self.TipSampleDilationWindow.show()
+
+    def MakeSimulationWindow(self):
+        self.SimulationWindow=tsd.SimulationWindow()
+        self.SimulationWindow.show()
+    
+    def MakePDBWindow(self):
+        self.PDBWindow=tsd.PDBWindow()
+        self.PDBWindow.show()
        
 
 class FrameUpData(QThread):
