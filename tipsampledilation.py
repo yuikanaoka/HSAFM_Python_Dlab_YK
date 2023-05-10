@@ -25,6 +25,8 @@ from PyQt5 import QtCore  # conda install pyqt
 from PyQt5 import QtWidgets
 from PyQt5.QtGui import QPixmap, QPainter, QPen
 from PyQt5.QtCore import Qt
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 
 import numpy as np
@@ -46,29 +48,47 @@ import lineprofile as lp
 import removebackground as rb
 import noisefilter as nf
 
-class TipSampleDilationWindow(QtWidgets.QWidget):
+class TipSampleDilationWindow(QMainWindow):
 
-    def __init__(self,parent=None):
+    def __init__(self):
 
-        super(TipSampleDilationWindow, self).__init__(parent)
+        super().__init__()
         
-    
-        
-        result = config.get_savedparam("panel", "Tip Sample Dilation")
-        if result is not None:
-          # 一致する行が見つかった場合は、resultを処理する
-            config.panel_left, config.panel_top, config.panel_width, config.panel_height = result
-        else:
-            config.panel_width= 500
-            config.panel_height = 800
-            config.panel_top = 100
-            config.panel_left = 100
+        # result = config.get_savedparam("panel", "Tip Sample Dilation")
+        # if result is not None:
+        #   # 一致する行が見つかった場合は、resultを処理する
+        #     config.panel_left, config.panel_top, config.panel_width, config.panel_height = result
+        # else:
+        config.panel_width=  1100
+        config.panel_height = 800
+        config.panel_top = 100
+        config.panel_left = 100
 
         self.setGeometry(config.panel_left , config.panel_top , config.panel_width, config.panel_height) 
 
         self.setWindowTitle("Tip Sample Dilation")
 
-        self.main_layout = QVBoxLayout()
+        self.main_layout = QHBoxLayout()
+
+
+        #=======================
+        # set the left panel
+        #=======================
+
+        self.left_groupbox= QGroupBox("Set Parameter")
+        self.left_groupbox.setFixedSize(500, 800)
+        self.left_groupbox_layout = QVBoxLayout()
+
+        #=======================
+        #set the right panel
+        #=======================
+        self.right_groupbox= QGroupBox("Simulation")
+        self.right_groupbox.setFixedSize(500, 800)
+        self.right_groupbox_layout = QVBoxLayout()
+
+        """
+        for left panel
+        """
 
         #=======================
         # Tip Geometry
@@ -86,6 +106,7 @@ class TipSampleDilationWindow(QtWidgets.QWidget):
         self.tipradius.setSingleStep(0.5)
         self.tipradius_layout.addWidget(self.tipradius_label)
         self.tipradius_layout.addWidget(self.tipradius)
+        self.tipradius.valueChanged.connect(self.tipradius_change)
 
         #tip shape
         self.tipshape_layout = QVBoxLayout()  # Create a new QVBoxLayout for the shape
@@ -95,6 +116,7 @@ class TipSampleDilationWindow(QtWidgets.QWidget):
         self.tipshape.addItem("Palaroid")
         self.tipshape_layout.addWidget(self.tipshape_label)
         self.tipshape_layout.addWidget(self.tipshape)
+        self.tipshape.currentIndexChanged.connect(self.tipshape_change)
 
         #pixel x direction
         self.pixelxdirection_layout = QVBoxLayout()  # Create a new QVBoxLayout for the shape
@@ -103,14 +125,18 @@ class TipSampleDilationWindow(QtWidgets.QWidget):
         self.pixelxdirection.setRange(50, 100)
         self.pixelxdirection_layout.addWidget(self.pixelxdirection_label)
         self.pixelxdirection_layout.addWidget(self.pixelxdirection)
+        self.pixelxdirection.valueChanged.connect(self.pixelxdirection_change)
 
         #tip angle
         self.tipangle_layout = QVBoxLayout()  # Create a new QVBoxLayout for the shape
         self.tipangle_label = QLabel("Tip Angle")
         self.tipangle = QDoubleSpinBox()
-        self.tipangle.setRange(1, 10)
+        self.tipangle.setRange(1, 100)
+        self.tipangle.setSingleStep(1)
+        self.tipangle.setValue(10)
         self.tipangle_layout.addWidget(self.tipangle_label)
         self.tipangle_layout.addWidget(self.tipangle)
+        self.tipangle.valueChanged.connect(self.tipangle_change)
 
 
 
@@ -210,6 +236,8 @@ class TipSampleDilationWindow(QtWidgets.QWidget):
         self.sampleatom.addItems(["C","N","O","ALL"])
         self.sampleatom_layout.addWidget(self.sampleatom_label)
         self.sampleatom_layout.addWidget(self.sampleatom)
+        self.sampleatom.currentIndexChanged.connect(self.atomtype_change)  # Connect the valueChanged signal to update_label
+
 
         #sample appearance type
         self.sampleappearancetype_layout = QVBoxLayout()  # Create a new QVBoxLayout for the tip postion
@@ -306,11 +334,6 @@ class TipSampleDilationWindow(QtWidgets.QWidget):
         self.sampleorientation_z_layout.addWidget(self.sampleorientation_z_label)  # Add the label to the layout
         self.sampleorientation_z_layout.addLayout(self.buttons_layout)
 
-
-
-
-
-
         # Add the layout to the sample orientation layout
         self.sampleorientation_layout.addLayout(self.sampleorientation_x_layout)
         self.sampleorientation_layout.addLayout(self.sampleorientation_y_layout)
@@ -318,82 +341,34 @@ class TipSampleDilationWindow(QtWidgets.QWidget):
         self.sampleorientation.setLayout(self.sampleorientation_layout)
 
 
+        # =======================
+        # Then add the each layout to the left layout
+        # =======================
         
+        self.left_groupbox.setLayout(self.left_groupbox_layout)
+        self.left_groupbox_layout.addWidget(self.tipgeometry)
+        self.left_groupbox_layout.addWidget(self.tipposition)
+        self.left_groupbox_layout.addWidget(self.sampleappearance)
+        self.left_groupbox_layout.addWidget(self.sampleorientation)
+        
+        #=======================
+        #add left layout to main layout
+        #=======================
+
+        self.main_layout.addWidget(self.left_groupbox)
 
 
+        """
+        for right panel
+        """
 
-
-        # =======================
-        # Then add the each layout to the main layout
-        # =======================
-        self.main_layout.addWidget(self.tipgeometry)
-        self.main_layout.addWidget(self.tipposition)
-        self.main_layout.addWidget(self.sampleappearance)
-        self.main_layout.addWidget(self.sampleorientation)
-
-
-        # =======================
-        # And finally, set the main layout to the window
-        # =======================
-        self.setLayout(self.main_layout)
-
-
-    #=========================
-    # necessary functions for tip position
-    #=========================
-    def update_tipposition_x_label(self, value):
-        self.tipposition_x_value_label.setText(str(value))
-    
-    def update_tipposition_y_label(self, value):
-        self.tipposition_y_value_label.setText(str(value))
-    
-    def update_tipposition_z_label(self, value):
-        self.tipposition_z_value_label.setText(str(value))
-
-    #=========================
-    # necessary functions for change orientation
-    #=========================
-    def increment_value(self):
-        self.value += self.step_size_spinbox.value()
-        print (self.value)
-
-    def decrement_value(self):
-        self.value -= self.step_size_spinbox.value()
-        print (self.value)
-
-
-    
-
-# =======================
-# simulaion window
-# =======================
-
-
-class SimulationWindow(QtWidgets.QWidget):
-    def __init__(self,parent=None):
-        super(SimulationWindow, self).__init__(parent)
-        result = config.get_savedparam("panel", "Simulation Window")
-        if result is not None:
-          # 一致する行が見つかった場合は、resultを処理する
-            config.panel_left, config.panel_top, config.panel_width, config.panel_height = result
-        else:
-            config.panel_width= 500
-            config.panel_height = 800
-            config.panel_top = 100
-            config.panel_left = 100
-
-        self.setGeometry(config.panel_left , config.panel_top , config.panel_width, config.panel_height) 
-
-        self.setWindowTitle("Simulation Window")
-
-        self.main_layout = QVBoxLayout()
 
         # =======================
         # simulation result display
         # =======================
         self.simulationresult_layout = QVBoxLayout()
         self.simulationresult = QGroupBox("Simulation Result")
-        self.simulationresult.setFixedSize(450, 300)
+        self.simulationresult.setFixedSize(500, 300)
         self.simulationresult.setStyleSheet("QGroupBox { font-size: 15px; font-weight: bold; }")  # Set the font size to 20px
 
 
@@ -427,15 +402,14 @@ class SimulationWindow(QtWidgets.QWidget):
         # simulate button
         # =======================
         self.simulatebutton_layout = QVBoxLayout()
-        self.simulatebutton = QGroupBox("Simulate")
-        self.simulatebutton.setFixedSize(450/2, 100)
-        self.simulatebutton.setStyleSheet("QGroupBox { font-size: 15px; font-weight: bold; }")  # Set the font size to 20px
         self.simulatebutton = QPushButton("Do Simulate")
+        self.simulatebutton.setFixedSize(450/2, 100)
+        self.simulatebutton.setStyleSheet("QPushButton { font-size: 15px; font-weight: bold; }")  # Set the font size to 20px
         self.simulatebutton.clicked.connect(self.dosimulate)
         self.simulatebutton_layout.addWidget(self.simulatebutton)
 
-        self.simulatebutton.setLayout(self.simulatebutton_layout)
-        self.horizontal_1_layout.addWidget(self.simulatebutton)
+        #self.simulatebutton.setLayout(self.simulatebutton_layout)
+        self.horizontal_1_layout.addLayout(self.simulatebutton_layout)
 
 
         # =======================
@@ -447,23 +421,21 @@ class SimulationWindow(QtWidgets.QWidget):
         # save as asd button
         # =======================
         self.saveasd_layout = QVBoxLayout()
-        self.saveasd = QGroupBox("Save as ASD")
-        self.saveasd.setFixedSize(450/2, 100)
-        self.saveasd.setStyleSheet("QGroupBox { font-size: 15px; font-weight: bold; }")  # Set the font size to 20px
-
-        self.saveasd.setLayout(self.saveasd_layout)
-        self.horizontal_2_layout.addWidget(self.saveasd)
+        self.saveasd = QPushButton("Save as ASD")
+        self.saveasd.setFixedSize(450/2, 50)
+        self.saveasd.setStyleSheet("QPushButton { font-size: 15px; font-weight: bold; }")  # Set the font size to 20px
+        self.saveasd_layout.addWidget(self.saveasd)
+        self.horizontal_2_layout.addLayout(self.saveasd_layout)
 
         # =======================
         # save as png button
         # =======================
         self.savepng_layout = QVBoxLayout()
-        self.savepng = QGroupBox("Save as PNG")
-        self.savepng.setFixedSize(450/2, 100)
-        self.savepng.setStyleSheet("QGroupBox { font-size: 15px; font-weight: bold; }")  # Set the font size to 20px
-
-        self.savepng.setLayout(self.savepng_layout)
-        self.horizontal_2_layout.addWidget(self.savepng)
+        self.savepng = QPushButton("Save as PNG")
+        self.savepng.setFixedSize(450/2, 50)
+        self.savepng.setStyleSheet("QPushButton { font-size: 15px; font-weight: bold; }")  # Set the font size to 20px
+        self.savepng_layout.addWidget(self.savepng)
+        self.horizontal_2_layout.addLayout(self.savepng_layout)
 
 
         # =======================
@@ -475,23 +447,22 @@ class SimulationWindow(QtWidgets.QWidget):
         # save orientation
         # =======================
         self.saveorientation_layout = QVBoxLayout()
-        self.saveorientation = QGroupBox("Save Orientation")
-        self.saveorientation.setFixedSize(450/2, 100)
-        self.saveorientation.setStyleSheet("QGroupBox { font-size: 15px; font-weight: bold; }")  # Set the font size to 20px
+        self.saveorientation = QPushButton("Save Orientation")
+        self.saveorientation.setFixedSize(450/2, 50)
+        self.saveorientation.setStyleSheet("QPushButton { font-size: 15px; font-weight: bold; }")  # Set the font size to 20px
+        self.saveorientation_layout.addWidget(self.saveorientation)
+        self.horizontal_3_layout.addLayout(self.saveorientation_layout)
         
-        self.saveorientation.setLayout(self.saveorientation_layout)
-        self.horizontal_3_layout.addWidget(self.saveorientation)
 
         # =======================
         #Load orientation
         # =======================
         self.loadorientation_layout = QVBoxLayout()
-        self.loadorientation = QGroupBox("Load Orientation")
-        self.loadorientation.setFixedSize(450/2, 100)
-        self.loadorientation.setStyleSheet("QGroupBox { font-size: 15px; font-weight: bold; }")  # Set the font size to 20px
-
-        self.loadorientation.setLayout(self.loadorientation_layout)
-        self.horizontal_3_layout.addWidget(self.loadorientation)
+        self.loadorientation = QPushButton("Load Orientation")
+        self.loadorientation.setFixedSize(450/2, 50)
+        self.loadorientation.setStyleSheet("QPushButton { font-size: 15px; font-weight: bold; }")  # Set the font size to 20px
+        self.loadorientation_layout.addWidget(self.loadorientation)
+        self.horizontal_3_layout.addLayout(self.loadorientation_layout)
 
 
         # =======================
@@ -503,56 +474,90 @@ class SimulationWindow(QtWidgets.QWidget):
         # Top view button
         # =======================
         self.topview_layout = QVBoxLayout()
-        self.topview = QGroupBox("Top View")
-        self.topview.setFixedSize(450/3, 100)
-        self.topview.setStyleSheet("QGroupBox { font-size: 15px; font-weight: bold; }")  # Set the font size to 20px
+        self.topview = QPushButton("Top View")
+        self.topview.setFixedSize(450/3, 50)
+        self.topview.setStyleSheet("QPushButton { font-size: 15px; font-weight: bold; }")  # Set the font size to 20px
+        self.topview_layout.addWidget(self.topview)
+        self.horizontal_4_layout.addLayout(self.topview_layout)
 
-        self.topview.setLayout(self.topview_layout)
-        self.horizontal_4_layout.addWidget(self.topview)
 
         # =======================
         #xz view button
         # =======================
         self.xzview_layout = QVBoxLayout()
-        self.xzview = QGroupBox("XZ View")
-        self.xzview.setFixedSize(450/3, 100)
-        self.xzview.setStyleSheet("QGroupBox { font-size: 15px; font-weight: bold; }")  # Set the font size to 20px
+        self.xzview = QPushButton("XZ View")
+        self.xzview.setFixedSize(450/3, 50)
+        self.xzview.setStyleSheet("QPushButton { font-size: 15px; font-weight: bold; }")  # Set the font size to 20px
+        self.xzview_layout.addWidget(self.xzview)
+        self.horizontal_4_layout.addLayout(self.xzview_layout)
 
-        self.xzview.setLayout(self.xzview_layout)
-        self.horizontal_4_layout.addWidget(self.xzview)
-
+    
         # =======================
         #yz view button
         # =======================
         self.yzview_layout = QVBoxLayout()
-        self.yzview = QGroupBox("YZ View")
-        self.yzview.setFixedSize(450/3, 100)
-        self.yzview.setStyleSheet("QGroupBox { font-size: 15px; font-weight: bold; }")  # Set the font size to 20px
+        self.yzview = QPushButton("YZ View")
+        self.yzview.setFixedSize(450/3, 50)
+        self.yzview.setStyleSheet("QPushButton { font-size: 15px; font-weight: bold; }")  # Set the font size to 20px
+        self.yzview_layout.addWidget(self.yzview)
+        self.horizontal_4_layout.addLayout(self.yzview_layout)
 
-        self.yzview.setLayout(self.yzview_layout)
-        self.horizontal_4_layout.addWidget(self.yzview)
-
-
-
-        
-       
 
         # =======================
-        # Then add the each layout to the main layout
+        # Then add the each layout to the right layout
         # =======================
-        self.main_layout.addWidget(self.simulationresult)
-        self.main_layout.addLayout(self.horizontal_1_layout)
-        self.main_layout.addLayout(self.horizontal_2_layout)
-        self.main_layout.addLayout(self.horizontal_3_layout)
-        self.main_layout.addLayout(self.horizontal_4_layout)
+        self.right_groupbox.setLayout(self.right_groupbox_layout)
+        self.right_groupbox_layout.addWidget(self.simulationresult)
+        self.right_groupbox_layout.addLayout(self.horizontal_1_layout)
+        self.right_groupbox_layout.addLayout(self.horizontal_2_layout)
+        self.right_groupbox_layout.addLayout(self.horizontal_3_layout)
+        self.right_groupbox_layout.addLayout(self.horizontal_4_layout)
 
-        
+
+        # =======================
+        # Then add the right layout to the main layout
+        # =======================
+        self.main_layout.addWidget(self.right_groupbox)
+
 
         # =======================
         # And finally, set the main layout to the window
         # =======================
-        self.setLayout(self.main_layout)
+        central_widget = QWidget()
+        central_widget.setLayout(self.main_layout)
+        self.setCentralWidget(central_widget)
 
+
+
+        
+
+    """
+    Funtion part
+    
+    """
+
+    #=========================
+    # necessary functions for tip position
+    #=========================
+    def update_tipposition_x_label(self, value):
+        self.tipposition_x_value_label.setText(str(value))
+    
+    def update_tipposition_y_label(self, value):
+        self.tipposition_y_value_label.setText(str(value))
+    
+    def update_tipposition_z_label(self, value):
+        self.tipposition_z_value_label.setText(str(value))
+
+    #=========================
+    # necessary functions for change orientation
+    #=========================
+    def increment_value(self):
+        self.value += self.step_size_spinbox.value()
+        print (self.value)
+
+    def decrement_value(self):
+        self.value -= self.step_size_spinbox.value()
+        print (self.value)
     
     #=========================
     # for import pdb file and store as dataframe
@@ -576,6 +581,82 @@ class SimulationWindow(QtWidgets.QWidget):
             # データフレームに変換しconfigに格納
             config.pdbdata = pd.DataFrame(atom_info, columns=['Model', 'Chain', 'Residue Name', 'Residue Number', 'Atom Name', 'X', 'Y', 'Z'])
             print(config.pdbdata)
+            self.display_pdb_3d()
+
+    #=========================
+    # display atom 
+    #=========================
+            
+    def display_pdb_3d(self):
+
+        #atom type judge and display pdb as 3d plot
+        if config.atomtype == "C":
+            print("carbon")
+            config.pdbplot = config.pdbdata[config.pdbdata['Atom Name'].str.startswith('C')]
+
+            config.fig = plt.figure(num="PDB Plot")
+            config.ax = config.fig.add_subplot(111, projection='3d')
+            config.sc=config.ax.scatter(config.pdbplot['X'], config.pdbplot['Y'], config.pdbplot['Z'],color="red")
+
+            plt.show()
+
+        elif config.atomtype == "N":
+            print("nitrogen")
+            config.pdbplot = config.pdbdata[config.pdbdata['Atom Name'].str.startswith('N')]
+            config.fig = plt.figure(num="PDB Plot")
+            config.ax = config.fig.add_subplot(111, projection='3d')
+            config.sc=config.ax.scatter(config.pdbplot['X'], config.pdbplot['Y'], config.pdbplot['Z'],color="blue")
+            plt.show()
+
+        elif config.atomtype == "O":
+            print("oxygen")
+            config.config.pdbplot= config.pdbdata[config.pdbdata['Atom Name'].str.startswith('O')]
+            config.fig = plt.figure(num="PDB Plot")
+            config.ax = config.fig.add_subplot(111, projection='3d')
+            config.sc=config.ax.scatter(config.pdbplot['X'], config.pdbplot['Y'], config.pdbplot['Z'],color="green")
+            plt.show()
+
+        elif config.atomtype == "ALL":
+            print("all")
+            config.fig = plt.figure(num="PDB Plot")
+            config.ax = config.fig.add_subplot(111, projection='3d')
+            config.sc=config.ax.scatter(config.pdbdata['X'], config.pdbdata['Y'], config.pdbdata['Z'],color="black")
+            plt.show()
+    
+    #=========================
+    # atomtype chnaged display update
+    #=========================
+    def display_atomtype_update(self):
+        print ("update")
+        if config.atomtype=="C":
+            print("carbon")
+            config.pdbplot = config.pdbdata[config.pdbdata['Atom Name'].str.startswith('C')]
+            config.sc._offsets3d = (config.pdbplot['X'], config.pdbplot['Y'], config.pdbplot['Z'])
+            config.sc.set_facecolor("red")
+            config.sc.set_edgecolor("red")
+            plt.draw()
+        elif config.atomtype=="N":
+            print("nitrogen")
+            config.pdbplot = config.pdbdata[config.pdbdata['Atom Name'].str.startswith('N')]
+            config.sc._offsets3d = (config.pdbplot['X'], config.pdbplot['Y'], config.pdbplot['Z'])
+            config.sc.set_facecolor("blue")
+            config.sc.set_edgecolor("blue")
+            plt.draw()
+        elif config.atomtype=="O":
+            print("oxygen")
+            config.pdbplot = config.pdbdata[config.pdbdata['Atom Name'].str.startswith('O')]
+            config.sc._offsets3d = (config.pdbplot['X'], config.pdbplot['Y'], config.pdbplot['Z'])
+            config.sc.set_facecolor("green")
+            config.sc.set_edgecolor("green")
+            plt.draw()
+        elif config.atomtype=="ALL":
+            print("all")
+            config.sc._offsets3d = (config.pdbdata['X'], config.pdbdata['Y'], config.pdbdata['Z'])
+            config.sc.set_facecolor("black")
+            config.sc.set_edgecolor("black")
+            plt.draw()
+    
+
 
     #=========================
     # Do tip sample dilation simulation
@@ -584,52 +665,60 @@ class SimulationWindow(QtWidgets.QWidget):
         print("simulate")
 
 
-#=========================
-# display atom coordinate window
-#=========================
 
-# class PDBWindow(QtWidgets.QWidget):
-#     def __init__(self,parent=None):
-#         super(PDBWindow, self).__init__(parent)
-#         result = config.get_savedparam("panel", "PDB Display Window")
-#         if result is not None:
-#           # 一致する行が見つかった場合は、resultを処理する
-#             config.panel_left, config.panel_top, config.panel_width, config.panel_height = result
-#         else:
-#             config.panel_width= 500
-#             config.panel_height = 500
-#             config.panel_top = 100
-#             config.panel_left = 100
+    #=========================
+    # detect atom type chnage
+    #=========================
+    def atomtype_change(self, index):
+        self.current_atom = self.sampleatom.itemText(index)
+        config.atomtype = self.current_atom
+        print(config.atomtype)
+        self.display_atomtype_update()
 
-#         self.setGeometry(config.panel_left , config.panel_top , config.panel_width, config.panel_height) 
+    #=========================
+    # detect tip radius chnage
+    #=========================
+    def tipradius_change(self):
+        config.tipradius = self.tipradius.value()
+        print(config.tipradius)
+    
+    #=========================
+    #detect tip shape change
+    #=========================
+    def tipshape_change(self, index):
+        self.current_tipshape = self.tipshape.itemText(index)
+        config.tipshape = self.current_tipshape
+        print(config.tipshape)
+    
+    #=========================
+    #detect pixel x direction change
+    #=========================
+    def pixelxdirection_change(self):
+        config.pixelxdirection = self.pixelxdirection.value()
+        print(config.pixelxdirection)
+    
+    #=========================
+    #detect tip angle change
+    #=========================
+    def tipangle_change(self):
+        config.tipangle = self.tipangle.value()
+        print(config.tipangle)
+    
 
-#         self.setWindowTitle("PDB Display Window")
-
-#         self.main_layout = QVBoxLayout()
-
-
-#         # =======================
-#         # pdb diplay window
-#         # =======================
-#         self.pdbdisplay_layout = QVBoxLayout()
-#         self.pdbdisplay = QGroupBox("PDB Display Window")
-#         self.pdbdisplay.setFixedSize(450, 300)
-#         self.pdbdisplay.setStyleSheet("QGroupBox { font-size: 15px; font-weight: bold; }")  # Set the font size to 20px
+    
+    #=========================
+    # create tip
+    #=========================
+    def createtip(self):
+        print("create tip")
 
 
-#         self.pdbdisplay.setLayout(self.pdbdisplay_layout)
+        
 
-#         # =======================
-#         # Then add the each layout to the main layout
-#         # =======================
-#         self.main_layout.addWidget(self.pdbdisplay)
+        
+    
 
-#         # =======================
-#         # And finally, set the main layout to the window
-#         # =======================
-#         self.setLayout(self.main_layout)
-
-
-
+    
+ 
 
 

@@ -103,12 +103,13 @@ class MainWindow(QMainWindow):
         self.foldersetting.setShortcut("Ctrl+F")
         self.foldersetting.triggered.connect(self.initialfolder_setting)
 
-        self.tipsampledilation = QAction("&Tip Sample Dilation", self)
+        self.tipsampledilation = QAction("&Tip Sample Dilation Setting", self)
         self.tipsampledilation.setShortcut("Ctrl+T")
-        self.tipsampledilation.triggered.connect(self.MakeTipSampleDilationWindow)
-        self.tipsampledilation.triggered.connect(self.MakeSimulationWindow)
+        self.tipsampledilation.triggered.connect(self.MakeTipSampleDilationMainWindow)
+        #self.tipsampledilation.triggered.connect(self.MakeSimulationWindow)
         #self.tipsampledilation.triggered.connect(self.MakePDBWindow)
-      
+
+        
         
         menubar = self.menuBar()
         fileMenu = menubar.addMenu('&Image Processing')
@@ -770,6 +771,21 @@ class MainWindow(QMainWindow):
     def MakeNoiseFilterWindow(self):
         self.Noisefilterwindow=nf.NoisefilterWindow()
         self.Noisefilterwindow.show()
+    
+    def MakeTipSampleDilationMainWindow(self):
+        # self.MakeTipSampleDilationWindow()
+        # self.MakeSimulationWindow()
+        # self.MakePDBWindow()
+        self.TipSampleDilationWindow=tsd.TipSampleDilationWindow()
+        # self.SimulationWindow=tsd.SimulationWindow()
+        # self.PDBWindow=tsd.PDBWindow()
+        self.TipSampleDilationWindow.show()
+        # self.SimulationWindow.show() 
+        # self.PDBWindow.show()
+        #print ("MakeTipSampleDilationMainWindow")
+       
+
+
     
     def MakeTipSampleDilationWindow(self):
         self.TipSampleDilationWindow=tsd.TipSampleDilationWindow()

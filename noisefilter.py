@@ -55,15 +55,15 @@ class NoisefilterWindow(QtWidgets.QWidget):
         if config.DispState  == 0:
             return 
         
-        result = self.get_savedparam("panel", "Noise Filters")
-        if result is not None:
-          # 一致する行が見つかった場合は、resultを処理する
-            config.panel_left, config.panel_top, config.panel_width, config.panel_height = result
-        else:
-            config.panel_width= 300
-            config.panel_height = 200
-            config.panel_top = 100
-            config.panel_left = 100
+        # result = config.get_savedparam("panel", "Noise Filters")
+        # if result is not None:
+        #   # 一致する行が見つかった場合は、resultを処理する
+        #     config.panel_left, config.panel_top, config.panel_width, config.panel_height = result
+        # else:
+        config.panel_width= 300
+        config.panel_height = 200
+        config.panel_top = 100
+        config.panel_left = 100
 
         self.setGeometry(config.panel_left , config.panel_top , config.panel_width, config.panel_height) 
 

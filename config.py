@@ -126,6 +126,20 @@ axes=None
 
 # afm simulation
 pdbdata = None
+atomtype = "C"
+pdbplot=None
+fig=None
+ax=None
+sc=None
+
+#tip parameter
+tipradius = 1
+tipshape = "Cone"
+tipangle=10
+
+#for simulation
+pixelxdirection = 50
+
 
 def save_params(type, name, variable):
         with open("FalconViewer.parm", "r+") as file:
