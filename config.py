@@ -136,9 +136,25 @@ sc=None
 tipradius = 1
 tipshape = "Cone"
 tipangle=10
+tipsize=None
+tipsize_half=None
+tipwave=None
 
 #for simulation
 pixelxdirection = 50
+pixelydirection = 50
+xcoordinate = None
+ycoordinate = None
+zcoordinate = None
+grid_sizex=None
+grid_sizey=None
+dx=0
+dy=0
+onepixeldilation = None
+dilation = None
+dilationborder = None
+dilation_img=None
+
 
 
 def save_params(type, name, variable):
