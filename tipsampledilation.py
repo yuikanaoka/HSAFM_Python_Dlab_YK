@@ -23,7 +23,7 @@ from PyQt5.QtWidgets import (QWidget, QApplication, QPushButton, QLineEdit,
                              QFileDialog, QMainWindow, QMessageBox, QTextEdit, QMenu, QFrame, QRadioButton, QDoubleSpinBox)
 from PyQt5 import QtCore  # conda install pyqt
 from PyQt5 import QtWidgets
-from PyQt5.QtGui import QPixmap, QPainter, QPen
+from PyQt5.QtGui import QPixmap, QPainter, QPen, QImage
 from PyQt5.QtCore import Qt
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -35,6 +35,8 @@ import threading
 import datetime
 
 import cv2
+
+import io
 
 from filelist import FileList
 from imagefifo import FileImport
@@ -64,6 +66,7 @@ class TipSampleDilationWindow(QMainWindow):
         config.panel_height = 800
         config.panel_top = 100
         config.panel_left = 100
+
 
         self.setGeometry(config.panel_left , config.panel_top , config.panel_width, config.panel_height) 
 
@@ -266,20 +269,21 @@ class TipSampleDilationWindow(QMainWindow):
         self.sampleorientation_x_layout = QVBoxLayout()  # Create a new QVBoxLayout for the tip postion
         self.sampleorientation_x_label = QLabel("X Axis")
         # Create a QDoubleSpinBox for the step size
-        self.step_size_spinbox = QDoubleSpinBox()
-        self.step_size_spinbox.setRange(1, 100)
-        self.step_size_spinbox.setSingleStep(1)
-        self.step_size_spinbox.setValue(1.0)
+        self.step_size_spinbox_x = QDoubleSpinBox()
+        self.step_size_spinbox_x.setRange(1, 100)
+        self.step_size_spinbox_x.setSingleStep(1)
+        self.step_size_spinbox_x.setValue(1.0)
+        self.step_size_spinbox_x.valueChanged.connect(self.update_step_size_x)  # Connect the valueChanged signal to update_label
         # Create a label to display the value
         self.button_increment = QPushButton('Increase')
-        self.button_increment.clicked.connect(self.increment_value)
+        self.button_increment.clicked.connect(self.increment_value_x)
         self.button_decrement = QPushButton('Decrease')
-        self.button_decrement.clicked.connect(self.decrement_value)
+        self.button_decrement.clicked.connect(self.decrement_value_x)
         # Initialize the value
         self.value = 0
         # Create a new horizontal layout for the buttons
         self.buttons_layout = QHBoxLayout()
-        self.buttons_layout.addWidget(self.step_size_spinbox)  # Add the spinbox to the layout
+        self.buttons_layout.addWidget(self.step_size_spinbox_x)  # Add the spinbox to the layout
         self.buttons_layout.addWidget(self.button_increment)  # Add the increase button to the layout
         self.buttons_layout.addWidget(self.button_decrement)  # Add the decrease button to the layout
         # Add the buttons layout, label, and label to the sampleorientation_x_layout
@@ -290,21 +294,22 @@ class TipSampleDilationWindow(QMainWindow):
         #sample orientation y
         self.sampleorientation_y_layout = QVBoxLayout()  # Create a new QVBoxLayout for the tip postion
         self.sampleorientation_y_label = QLabel("Y Axis")
-        self.step_size_spinbox = QDoubleSpinBox()
-        self.step_size_spinbox.setRange(1, 100)
-        self.step_size_spinbox.setSingleStep(1)
-        self.step_size_spinbox.setValue(1.0)
+        self.step_size_spinbox_y = QDoubleSpinBox()
+        self.step_size_spinbox_y.setRange(1, 100)
+        self.step_size_spinbox_y.setSingleStep(1)
+        self.step_size_spinbox_y.setValue(1.0)
+        self.step_size_spinbox_y.valueChanged.connect(self.update_step_size_y)
         # Create a label to display the value
         self.button_increment = QPushButton('Increase')
-        self.button_increment.clicked.connect(self.increment_value)
+        self.button_increment.clicked.connect(self.increment_value_y)
         self.button_decrement = QPushButton('Decrease')
-        self.button_decrement.clicked.connect(self.decrement_value)
+        self.button_decrement.clicked.connect(self.decrement_value_y)
         # Initialize the value
         self.value = 0
         #self.step_size = self.step_size_spinbox.value()
         # Create a new horizontal layout for the buttons
         self.buttons_layout = QHBoxLayout()
-        self.buttons_layout.addWidget(self.step_size_spinbox)  # Add the spinbox to the layout
+        self.buttons_layout.addWidget(self.step_size_spinbox_y)  # Add the spinbox to the layout
         self.buttons_layout.addWidget(self.button_increment)  # Add the increase button to the layout
         self.buttons_layout.addWidget(self.button_decrement)  # Add the decrease button to the layout
         # Add the buttons layout, label, and label to the sampleorientation_x_layout
@@ -315,20 +320,21 @@ class TipSampleDilationWindow(QMainWindow):
         #sample orientation z
         self.sampleorientation_z_layout = QVBoxLayout()  # Create a new QVBoxLayout for the tip postion
         self.sampleorientation_z_label = QLabel("Z Axis")
-        self.step_size_spinbox = QDoubleSpinBox()
-        self.step_size_spinbox.setRange(1, 100)
-        self.step_size_spinbox.setSingleStep(1)
-        self.step_size_spinbox.setValue(1.0)
+        self.step_size_spinbox_z = QDoubleSpinBox()
+        self.step_size_spinbox_z.setRange(1, 100)
+        self.step_size_spinbox_z.setSingleStep(1)
+        self.step_size_spinbox_z.setValue(1.0)
+        self.step_size_spinbox_z.valueChanged.connect(self.update_step_size_z)
         # Create a label to display the value
         self.button_increment = QPushButton('Increase')
-        self.button_increment.clicked.connect(self.increment_value)
+        self.button_increment.clicked.connect(self.increment_value_z)
         self.button_decrement = QPushButton('Decrease')
-        self.button_decrement.clicked.connect(self.decrement_value)
+        self.button_decrement.clicked.connect(self.decrement_value_z)
         # Initialize the value
         self.value = 0
         # Create a new horizontal layout for the buttons
         self.buttons_layout = QHBoxLayout()
-        self.buttons_layout.addWidget(self.step_size_spinbox)  # Add the spinbox to the layout
+        self.buttons_layout.addWidget(self.step_size_spinbox_z)  # Add the spinbox to the layout
         self.buttons_layout.addWidget(self.button_increment)  # Add the increase button to the layout
         self.buttons_layout.addWidget(self.button_decrement)  # Add the decrease button to the layout
         # Add the buttons layout, label, and label to the sampleorientation_x_layout
@@ -371,8 +377,12 @@ class TipSampleDilationWindow(QMainWindow):
         self.simulationresult = QGroupBox("Simulation Result")
         self.simulationresult.setFixedSize(500, 300)
         self.simulationresult.setStyleSheet("QGroupBox { font-size: 15px; font-weight: bold; }")  # Set the font size to 20px
-
-
+        #check if there is dilation wave
+        self.image_label = QLabel(self.simulationresult)
+        config.imgdilationfig=plt.figure(num="Simlated img")
+        config.imgax=config.imgdilationfig.add_subplot(111)
+        plt.close(config.imgdilationfig)
+        self.simulationresult_layout.addWidget(self.image_label)
         self.simulationresult.setLayout(self.simulationresult_layout)
 
         # =======================
@@ -550,15 +560,111 @@ class TipSampleDilationWindow(QMainWindow):
         self.tipposition_z_value_label.setText(str(value))
 
     #=========================
-    # necessary functions for change orientation
+    #detect step size chnaged
     #=========================
-    def increment_value(self):
-        self.value += self.step_size_spinbox.value()
-        print (self.value)
+    def update_step_size_x(self):
+        config.stepsize_x = self.step_size_spinbox_x.value()
+        print (config.stepsize_x)
+    
+    def update_step_size_y(self):
+        config.stepsize_y= self.step_size_spinbox_y.value()
+        print (config.stepsize_y)
+    
+    def update_step_size_z(self):
+        config.stepsize_z = self.step_size_spinbox_z.value()
+        print (config.stepsize_z)
 
-    def decrement_value(self):
-        self.value -= self.step_size_spinbox.value()
-        print (self.value)
+
+    #=========================
+    # functions for change orientation
+    #=========================
+    def increment_value_x(self):
+        config.anglex += config.stepsize_x
+        #print (config.anglex)
+        config.rotmatrixx= np.array([[1, 0, 0], [0, np.cos(math.radians(config.stepsize_x)), -np.sin(math.radians(config.stepsize_x))], [0, np.sin(math.radians(config.stepsize_x)), np.cos(math.radians(config.stepsize_x))]])
+        config.memrotmatrix=np.dot(config.memrotmatrix, config.rotmatrixx)
+        #print (config.memrotmatrix)
+        print ("before roattion")
+        print (len(config.pdbplot))
+        coordinates = config.pdbplot[["X", "Y", "Z"]].values
+        rotated_coordinates = np.dot(coordinates, config.rotmatrixx.T)
+        config.pdbplot[["X", "Y", "Z"]] = rotated_coordinates
+        print ("after roattion")
+        print (len(config.pdbplot))
+        self.display_update()
+
+
+    def decrement_value_x(self):
+        config.anglex -= config.stepsize_x
+        print (config.anglex)
+        config.rotmatrixx= np.array([[1, 0, 0], [0, np.cos(-math.radians(config.stepsize_x)), -np.sin(-math.radians(config.stepsize_x))], [0, np.sin(-math.radians(config.stepsize_x)), np.cos(-math.radians(config.stepsize_x))]])
+        config.memrotmatrix=np.dot(config.memrotmatrix, config.rotmatrixx)
+        print ("before roattion")
+        print (len(config.pdbplot))
+        coordinates = config.pdbplot[["X", "Y", "Z"]].values
+        rotated_coordinates = np.dot(coordinates, config.rotmatrixx.T)
+        config.pdbplot[["X", "Y", "Z"]] = rotated_coordinates
+        print ("after roattion")
+        print (len(config.pdbplot))
+        self.display_update()
+
+
+    def increment_value_y(self):
+        config.angley += config.stepsize_y
+        print (config.angley)
+        config.rotmatrixy= np.array([[np.cos(math.radians(config.stepsize_y)), 0, np.sin(math.radians(config.stepsize_y))], [0, 1, 0], [-np.sin(math.radians(config.stepsize_y)), 0, np.cos(math.radians(config.stepsize_y))]])
+        config.memrotmatrix=np.dot(config.memrotmatrix, config.rotmatrixy)
+        print ("before roattion")
+        print (len(config.pdbplot))
+        coordinates = config.pdbplot[["X", "Y", "Z"]].values
+        rotated_coordinates = np.dot(coordinates, config.rotmatrixy.T)
+        config.pdbplot[["X", "Y", "Z"]] = rotated_coordinates
+        print ("after roattion")
+        print (len(config.pdbplot))
+        self.display_update()
+    
+    def decrement_value_y(self):
+        config.angley -= config.stepsize_y
+        print (config.angley)
+        config.rotmatrixy= np.array([[np.cos(-math.radians(config.stepsize_y)), 0, np.sin(-math.radians(config.stepsize_y))], [0, 1, 0], [-np.sin(-math.radians(config.stepsize_y)), 0, np.cos(-math.radians(config.stepsize_y))]])
+        config.memrotmatrix=np.dot(config.memrotmatrix, config.rotmatrixy)
+        print ("before roattion")
+        print (len(config.pdbplot))
+        coordinates = config.pdbplot[["X", "Y", "Z"]].values
+        rotated_coordinates = np.dot(coordinates, config.rotmatrixy.T)
+        config.pdbplot[["X", "Y", "Z"]] = rotated_coordinates
+        print ("after roattion")
+        print (len(config.pdbplot))
+        self.display_update()
+    
+    def increment_value_z(self):
+        config.anglez += config.stepsize_z
+        print (config.anglez)
+        config.rotmatrixz= np.array([[np.cos(math.radians(config.stepsize_z)), -np.sin(math.radians(config.stepsize_z)), 0], [np.sin(math.radians(config.stepsize_z)), np.cos(math.radians(config.stepsize_z)), 0], [0, 0, 1]])
+        config.memrotmatrix=np.dot(config.memrotmatrix, config.rotmatrixz)
+        print ("before roattion")
+        print (len(config.pdbplot))
+        coordinates = config.pdbplot[["X", "Y", "Z"]].values
+        rotated_coordinates = np.dot(coordinates, config.rotmatrixz.T)
+        config.pdbplot[["X", "Y", "Z"]] = rotated_coordinates
+        print ("after roattion")
+        print (len(config.pdbplot))
+        self.display_update()
+
+    def decrement_value_z(self):
+        config.anglez -= config.stepsize_z
+        print (config.anglez)
+        config.rotmatrixz= np.array([[np.cos(-math.radians(config.stepsize_z)), -np.sin(-math.radians(config.stepsize_z)), 0], [np.sin(-math.radians(config.stepsize_z)), np.cos(-math.radians(config.stepsize_z)), 0], [0, 0, 1]])
+        config.memrotmatrix=np.dot(config.memrotmatrix, config.rotmatrixz)
+        print ("before roattion")
+        print (len(config.pdbplot))
+        coordinates = config.pdbplot[["X", "Y", "Z"]].values
+        rotated_coordinates = np.dot(coordinates, config.rotmatrixz.T)
+        config.pdbplot[["X", "Y", "Z"]] = rotated_coordinates
+        print ("after roattion")
+        print (len(config.pdbplot))
+        self.display_update()
+
     
     #=========================
     # for import pdb file and store as dataframe
@@ -591,85 +697,83 @@ class TipSampleDilationWindow(QMainWindow):
     def display_pdb_3d(self):
 
         #atom type judge and display pdb as 3d plot
-        if config.atomtype == "C":
-            print("carbon")
-            config.pdbplot = config.pdbdata[config.pdbdata['Atom Name'].str.startswith('C')]
-
-            config.fig = plt.figure(num="PDB Plot")
-            config.ax = config.fig.add_subplot(111, projection='3d')
-            config.ax.set_xlabel('X axis')
-            config.ax.set_ylabel('Y axis')
-            config.ax.set_zlabel('Z axis')
-            config.sc=config.ax.scatter(config.pdbplot['X'], config.pdbplot['Y'], config.pdbplot['Z'],color="red")
-
-            plt.show(block=False)
-
-        elif config.atomtype == "N":
-            print("nitrogen")
-            config.pdbplot = config.pdbdata[config.pdbdata['Atom Name'].str.startswith('N')]
-            config.fig = plt.figure(num="PDB Plot")
-            config.ax = config.fig.add_subplot(111, projection='3d')
-            config.ax.set_xlabel('X axis')
-            config.ax.set_ylabel('Y axis')
-            config.ax.set_zlabel('Z axis')
-            config.sc=config.ax.scatter(config.pdbplot['X'], config.pdbplot['Y'], config.pdbplot['Z'],color="blue")
-            plt.show(block=False)
-
-        elif config.atomtype == "O":
-            print("oxygen")
-            config.pdbplot= config.pdbdata[config.pdbdata['Atom Name'].str.startswith('O')]
-            config.fig = plt.figure(num="PDB Plot")
-            config.ax = config.fig.add_subplot(111, projection='3d')
-            config.ax.set_xlabel('X axis')
-            config.ax.set_ylabel('Y axis')
-            config.ax.set_zlabel('Z axis')
-            config.sc=config.ax.scatter(config.pdbplot['X'], config.pdbplot['Y'], config.pdbplot['Z'],color="green")
-            plt.show(block=False)
-
-        elif config.atomtype == "ALL":
+        if config.atomtype=="ALL":
             print("all")
-            config.fig = plt.figure(num="PDB Plot")
+            config.fig=plt.figure(num="PDB Viewer")
             config.ax = config.fig.add_subplot(111, projection='3d')
-            config.ax.set_xlabel('X axis')
-            config.ax.set_ylabel('Y axis')
-            config.ax.set_zlabel('Z axis')
-            config.sc=config.ax.scatter(config.pdbdata['X'], config.pdbdata['Y'], config.pdbdata['Z'],color="black")
+            config.sc = config.ax.scatter(config.pdbdata['X'], config.pdbdata['Y'], config.pdbdata['Z'], s=10, marker='o', alpha=0.5)
+            #config.sc._offsets3d = (config.pdbdata['X'], config.pdbdata['Y'], config.pdbdata['Z'])
+            config.sc.set_facecolor(config.atomtype_color[config.atomtype])
+            config.sc.set_edgecolor(config.atomtype_color[config.atomtype])
+            config.ax.set_xlim([config.pdbplot['X'].min(), config.pdbplot['X'].max()])
+            config.ax.set_ylim([config.pdbplot['Y'].min(), config.pdbplot['Y'].max()])
+            config.ax.set_zlim([config.pdbplot['Z'].min(), config.pdbplot['Z'].max()])
             plt.show(block=False)
+            plt.draw()
+        else:
+            print(config.atomtype)
+            #print (type(config.atomtype))
+            config.pdbplot = config.pdbdata[config.pdbdata['Atom Name'] == config.atomtype]
+            #print(config.pdbplot)
+            print (len(config.pdbplot))
+            config.fig=plt.figure(num="PDB Viewer")
+            config.ax = config.fig.add_subplot(111, projection='3d')
+            config.sc = config.ax.scatter(config.pdbplot['X'], config.pdbplot['Y'], config.pdbplot['Z'], s=10, marker='o', alpha=0.5)
+            #config.sc._offsets3d = (config.pdbplot['X'], config.pdbplot['Y'], config.pdbplot['Z'])
+            config.sc.set_facecolor(config.atomtype_color[config.atomtype])
+            config.sc.set_edgecolor(config.atomtype_color[config.atomtype])
+            config.ax.set_xlim([config.pdbplot['X'].min(), config.pdbplot['X'].max()])
+            config.ax.set_ylim([config.pdbplot['Y'].min(), config.pdbplot['Y'].max()])
+            config.ax.set_zlim([config.pdbplot['Z'].min(), config.pdbplot['Z'].max()])
+            plt.show(block=False)
+            plt.draw()
+
     
     #=========================
     # atomtype chnaged display update
     #=========================
     def display_atomtype_update(self):
         print ("update")
-        if config.atomtype=="C":
-            print("carbon")
-            config.pdbplot = config.pdbdata[config.pdbdata['Atom Name'].str.startswith('C')]
-            config.sc._offsets3d = (config.pdbplot['X'], config.pdbplot['Y'], config.pdbplot['Z'])
-            config.sc.set_facecolor("red")
-            config.sc.set_edgecolor("red")
-            plt.draw()
-        elif config.atomtype=="N":
-            print("nitrogen")
-            config.pdbplot = config.pdbdata[config.pdbdata['Atom Name'].str.startswith('N')]
-            config.sc._offsets3d = (config.pdbplot['X'], config.pdbplot['Y'], config.pdbplot['Z'])
-            config.sc.set_facecolor("blue")
-            config.sc.set_edgecolor("blue")
-            plt.draw()
-            print (config.pdbplot)
-        elif config.atomtype=="O":
-            print("oxygen")
-            config.pdbplot = config.pdbdata[config.pdbdata['Atom Name'].str.startswith('O')]
-            config.sc._offsets3d = (config.pdbplot['X'], config.pdbplot['Y'], config.pdbplot['Z'])
-            config.sc.set_facecolor("green")
-            config.sc.set_edgecolor("green")
-            plt.draw()
-        elif config.atomtype=="ALL":
+        if config.atomtype=="ALL":
             print("all")
+            config.pdbplot = config.pdbdata
+            print (len(config.pdbplot))
             config.sc._offsets3d = (config.pdbdata['X'], config.pdbdata['Y'], config.pdbdata['Z'])
-            config.sc.set_facecolor("black")
-            config.sc.set_edgecolor("black")
+            config.sc.set_facecolor(config.atomtype_color[config.atomtype])
+            config.sc.set_edgecolor(config.atomtype_color[config.atomtype])
+            config.ax.set_xlim([config.pdbplot['X'].min(), config.pdbplot['X'].max()])
+            config.ax.set_ylim([config.pdbplot['Y'].min(), config.pdbplot['Y'].max()])
+            config.ax.set_zlim([config.pdbplot['Z'].min(), config.pdbplot['Z'].max()])
             plt.draw()
+        else:
+            print(config.atomtype)
+            config.pdbplot = config.pdbdata[config.pdbdata['Atom Name'] == config.atomtype]
+            #print(config.pdbplot)
+            print (len(config.pdbplot))
+            config.sc._offsets3d = (config.pdbplot['X'], config.pdbplot['Y'], config.pdbplot['Z'])
+            config.sc.set_facecolor(config.atomtype_color[config.atomtype])
+            config.sc.set_edgecolor(config.atomtype_color[config.atomtype])
+            config.ax.set_xlim([config.pdbplot['X'].min(), config.pdbplot['X'].max()])
+            config.ax.set_ylim([config.pdbplot['Y'].min(), config.pdbplot['Y'].max()])
+            config.ax.set_zlim([config.pdbplot['Z'].min(), config.pdbplot['Z'].max()])
+            plt.draw()
+
+        
+       
     
+    #=========================
+    #pdb display update
+    #=========================
+    def display_update(self):
+        config.sc._offsets3d = (config.pdbplot['X'], config.pdbplot['Y'], config.pdbplot['Z'])
+        config.sc.set_facecolor(config.atomtype_color[config.atomtype])
+        config.sc.set_edgecolor(config.atomtype_color[config.atomtype])
+        config.ax.set_xlim([config.pdbplot['X'].min(), config.pdbplot['X'].max()])
+        config.ax.set_ylim([config.pdbplot['Y'].min(), config.pdbplot['Y'].max()])
+        config.ax.set_zlim([config.pdbplot['Z'].min(), config.pdbplot['Z'].max()])
+        plt.draw()
+
+
 
 
     #=========================
@@ -727,6 +831,32 @@ class TipSampleDilationWindow(QMainWindow):
         config.tipangle = self.tipangle.value()
         print(config.tipangle)
         # self.createtip()
+
+    #=========================
+    # if dilation wave is updated check
+    #=========================
+    def dilation_display_update(self):
+        print ("updated")
+        #self.image_label=QLabel(self.simulationresult)
+        #img=Image.fromarray(img_array)
+        #img.save('dilation.png')
+        
+        config.imgax.clear()
+        img_array=(config.dilation/config.dilation.max())*255
+        img_array=img_array.astype(np.uint8)
+        config.imgax.imshow(img_array,extent=[0,config.dx*config.dilation.shape[1],0,config.dy*config.dilation.shape[0]])
+        config.imgax.set_xlabel("x nm")
+        config.imgax.set_ylabel("y nm")
+        buf=io.BytesIO()
+        config.imgdilationfig.savefig(buf, format='png', bbox_inches='tight', pad_inches=0)
+        buf.seek(0) 
+        config.dilation_qimage=QImage.fromData(buf.getvalue())
+        config.dilation_map=QPixmap.fromImage(config.dilation_qimage)
+        config.dilation_map=config.dilation_map.scaled(self.image_label.width(), self.image_label.height(), Qt.KeepAspectRatio)
+        self.image_label.setPixmap(QPixmap(config.dilation_map))
+        plt.show(block=False)
+        #plt.draw()
+        
     
 
     
@@ -788,18 +918,18 @@ class TipSampleDilationWindow(QMainWindow):
 
         
         #print (config.tipwave)
-        print (config.tipsize)
-        print (config.tipwave.shape)
-        print (type(config.tipwave))
-        tipwavex,tipwavey=np.indices(config.tipwave.shape)
+        # print (config.tipsize)
+        # print (config.tipwave.shape)
+        # print (type(config.tipwave))
+        # tipwavex,tipwavey=np.indices(config.tipwave.shape)
 
         
-        figtip=plt.figure(num="Tip")
-        oneax=figtip.add_subplot(111, projection='3d')
-        oneax.plot_surface(tipwavex,tipwavey,config.tipwave)
-        #plt.imshow(config.tipwave)
-        plt.show(block=False)
-        plt.draw()
+        # figtip=plt.figure(num="Tip")
+        # oneax=figtip.add_subplot(111, projection='3d')
+        # oneax.plot_surface(tipwavex,tipwavey,config.tipwave)
+        # #plt.imshow(config.tipwave)
+        # plt.show(block=False)
+        # plt.draw()
 
         
 
@@ -823,24 +953,24 @@ class TipSampleDilationWindow(QMainWindow):
                 z_max=red_coord.max()
                 config.onepixeldilation[ix][iy]=z_max
         
-        onepixelx, onepixely=np.indices(config.onepixeldilation.shape)
-        figonepixel=plt.figure(num="onepixel")
-        oneax=figonepixel.add_subplot(111, projection='3d')
-        oneax.scatter(onepixelx,onepixely,config.onepixeldilation)
-        oneax.set_xlabel('X axis')
-        oneax.set_ylabel('Y axis')
-        oneax.set_zlabel('Z axis')
-        plt.show(block=False)
-        plt.draw()
+        # onepixelx, onepixely=np.indices(config.onepixeldilation.shape)
+        # figonepixel=plt.figure(num="onepixel")
+        # oneax=figonepixel.add_subplot(111, projection='3d')
+        # oneax.scatter(onepixelx,onepixely,config.onepixeldilation)
+        # oneax.set_xlabel('X axis')
+        # oneax.set_ylabel('Y axis')
+        # oneax.set_zlabel('Z axis')
+        # plt.show(block=False)
+        # plt.draw()
 
-        img_array=(config.onepixeldilation/config.onepixeldilation.max())*255
-        img_array=img_array.astype(np.uint8)
-        #img=Image.fromarray(img_array)
-        #img.save('dilation.png')
-        imgone=plt.figure(num="Simlated one pixel img")
-        imgax=imgone.add_subplot(111)
-        imgax.imshow(img_array)
-        plt.show(block=False)
+        # img_array=(config.onepixeldilation/config.onepixeldilation.max())*255
+        # img_array=img_array.astype(np.uint8)
+        # #img=Image.fromarray(img_array)
+        # #img.save('dilation.png')
+        # imgone=plt.figure(num="Simlated one pixel img")
+        # imgax=imgone.add_subplot(111)
+        # imgax.imshow(img_array)
+        # plt.show(block=False)
 
 
     
@@ -851,6 +981,10 @@ class TipSampleDilationWindow(QMainWindow):
         config.xcoordinate=config.pdbplot['X']-config.pdbplot['X'].min()
         config.ycoordinate=config.pdbplot['Y']-config.pdbplot['Y'].min()
         config.zcoordinate=config.pdbplot['Z']-config.pdbplot['Z'].min()
+
+        config.xcoordinate=config.xcoordinate/10
+        config.ycoordinate=config.ycoordinate/10
+        config.zcoordinate=config.zcoordinate/10
 
         #get the number of the atoms
         atomnumber=len(config.pdbplot)
@@ -877,14 +1011,14 @@ class TipSampleDilationWindow(QMainWindow):
         img_array_border=img_array_border.astype(np.uint8)
         #img=Image.fromarray(img_array)
         #img.save('dilation.png')
-        imgborderfig=plt.figure(num="dilation border img")
-        imgborderax=imgborderfig.add_subplot(111)
-        imgborderax.imshow(img_array_border)
-        plt.show(block=False)
+        # imgborderfig=plt.figure(num="dilation border img")
+        # imgborderax=imgborderfig.add_subplot(111)
+        # imgborderax.imshow(img_array_border)
+        # plt.show(block=False)
 
         config.dilation=np.zeros((l_x,l_y))
-        print (l_x)
-        print (l_y)
+        #print (l_x)
+        #print (l_y)
 
 
         #make dilation
@@ -900,38 +1034,34 @@ class TipSampleDilationWindow(QMainWindow):
                 # print(z_diffmap.shape)
                 # print ("======")
                 displacement=z_diffmap.max()
-                config.dilation[ix][iy]=displacement
+                config.dilation[ix+config.tipsize_half][iy+config.tipsize_half]=displacement
         
         #config.dilation=config.dilation/(config.dilation.max())
-        print ("type")
-        print(type(config.dilation))
-        config.dilation=config.dilation/10
-        np.savetxt('dilation.csv', config.dilation, delimiter=',')
+        #print ("type")
+        #print(type(config.dilation))
+        #config.dilation=config.dilation/10
+        #np.savetxt('dilation.csv', config.dilation, delimiter=',')
 
         #apply afm color map and save image 
         #self.makeDIcolor()
         #config.dilation_img=cv2.applyColorMap(config.dilation, config.DIcolor)
-        img_array=(config.dilation/config.dilation.max())*255
-        img_array=img_array.astype(np.uint8)
-        #img=Image.fromarray(img_array)
-        #img.save('dilation.png')
-        imgdilationfig=plt.figure(num="Simlated img")
-        imgax=imgdilationfig.add_subplot(111)
-        imgax.imshow(img_array)
-        plt.show(block=False)
+        
+        self.dilation_display_update()
+        
+       
 
 
 
 
-        dilationx, dilationy=np.indices(config.dilation.shape)
-        figdilation=plt.figure(num="dilation")
-        dilaax=figdilation.add_subplot(111, projection='3d')
-        dilaax.scatter(dilationx,dilationy,config.dilation)
-        dilaax.set_xlabel('X axis')
-        dilaax.set_ylabel('Y axis')
-        dilaax.set_zlabel('Z axis')
-        plt.show(block=False)
-        plt.draw()
+        # dilationx, dilationy=np.indices(config.dilation.shape)
+        # figdilation=plt.figure(num="dilation")
+        # dilaax=figdilation.add_subplot(111, projection='3d')
+        # dilaax.scatter(dilationx,dilationy,config.dilation)
+        # dilaax.set_xlabel('X axis')
+        # dilaax.set_ylabel('Y axis')
+        # dilaax.set_zlabel('Z axis')
+        # plt.show(block=False)
+        # plt.draw()
 
     #=========================
     # make color map

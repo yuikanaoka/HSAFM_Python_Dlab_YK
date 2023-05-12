@@ -124,13 +124,14 @@ figure=None
 axes=None
 
 
-# afm simulation
+# pdb display
 pdbdata = None
 atomtype = "C"
 pdbplot=None
 fig=None
 ax=None
 sc=None
+atomtype_color={"C":"red","N":"blue","O":"green","ALL":"black"}
 
 #tip parameter
 tipradius = 1
@@ -154,7 +155,25 @@ onepixeldilation = None
 dilation = None
 dilationborder = None
 dilation_img=None
+dilation_map=None
+dilation_qimage=None
 
+imgdilationfig=None
+imgax=None
+
+#orientation
+stepsize_x=1
+stepsize_y=1
+stepsize_z=1
+anglex=0
+angley=0
+anglez=0
+
+# rotation matrix
+memrotmatrix = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+rotmatrixx = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+rotmatrixy = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+rotmatrixz = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
 
 
 def save_params(type, name, variable):
