@@ -1040,7 +1040,8 @@ class TipSampleDilationWindow(QMainWindow):
         #print ("type")
         #print(type(config.dilation))
         #config.dilation=config.dilation/10
-        #np.savetxt('dilation.csv', config.dilation, delimiter=',')
+        np.savetxt('dilation.csv', config.dilation, delimiter=',')
+        print (config.dilation.max())
 
         #apply afm color map and save image 
         #self.makeDIcolor()
