@@ -159,7 +159,9 @@ dilation_map=None
 dilation_qimage=None
 
 imgdilationfig=None
+imgfig=None
 imgax=None
+savepng=None
 
 #orientation
 stepsize_x=1

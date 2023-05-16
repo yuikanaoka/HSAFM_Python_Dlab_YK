@@ -27,6 +27,7 @@ from PyQt5.QtGui import QPixmap, QPainter, QPen, QImage
 from PyQt5.QtCore import Qt
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+from matplotlib.colors import LinearSegmentedColormap
 
 
 import numpy as np
@@ -375,7 +376,7 @@ class TipSampleDilationWindow(QMainWindow):
         # =======================
         self.simulationresult_layout = QVBoxLayout()
         self.simulationresult = QGroupBox("Simulation Result")
-        self.simulationresult.setFixedSize(500, 300)
+        self.simulationresult.setFixedSize(500, 400)
         self.simulationresult.setStyleSheet("QGroupBox { font-size: 15px; font-weight: bold; }")  # Set the font size to 20px
         #check if there is dilation wave
         self.image_label = QLabel(self.simulationresult)
@@ -445,6 +446,7 @@ class TipSampleDilationWindow(QMainWindow):
         self.savepng = QPushButton("Save as PNG")
         self.savepng.setFixedSize(450/2, 50)
         self.savepng.setStyleSheet("QPushButton { font-size: 15px; font-weight: bold; }")  # Set the font size to 20px
+        self.savepng.clicked.connect(self.savepngfunc)
         self.savepng_layout.addWidget(self.savepng)
         self.horizontal_2_layout.addLayout(self.savepng_layout)
 
@@ -786,7 +788,13 @@ class TipSampleDilationWindow(QMainWindow):
         self.dilation()
         #final dilation
 
-
+    #=========================
+    #save as png
+    #=========================
+    def savepngfunc(self):
+        print("save png")
+        plt.imsave('simulatedafm.png',config.savepng)
+        print ("saved")
 
 
     #=========================
@@ -841,10 +849,19 @@ class TipSampleDilationWindow(QMainWindow):
         #img=Image.fromarray(img_array)
         #img.save('dilation.png')
         
-        config.imgax.clear()
+        #config.imgax.clear()
         img_array=(config.dilation/config.dilation.max())*255
         img_array=img_array.astype(np.uint8)
-        config.imgax.imshow(img_array,extent=[0,config.dx*config.dilation.shape[1],0,config.dy*config.dilation.shape[0]])
+        print (img_array.shape)
+        #np.savetxt('dilation_255.csv', img_array, delimiter=',')
+        cmap=self.makeDIcolor()
+        #img_array=cv2.applyColorMap(img_array, config.DIcolor)
+        #img_array=cv2.cvtColor(img_array, cv2.COLOR_BGR2RGB)
+        config.savepng=cmap(img_array)
+        #plt.imsave('dilation.png',config.savepng)
+        #config.imgfig=plt.figure(num="dilation img")
+        #config.imgax=config.imgfig.add_subplot(111)
+        config.imgax.imshow(img_array,extent=[0,config.dx*img_array.shape[1],0,config.dy*img_array.shape[0]],cmap=cmap)
         config.imgax.set_xlabel("x nm")
         config.imgax.set_ylabel("y nm")
         buf=io.BytesIO()
@@ -855,7 +872,7 @@ class TipSampleDilationWindow(QMainWindow):
         config.dilation_map=config.dilation_map.scaled(self.image_label.width(), self.image_label.height(), Qt.KeepAspectRatio)
         self.image_label.setPixmap(QPixmap(config.dilation_map))
         plt.show(block=False)
-        #plt.draw()
+        
         
     
 
@@ -1041,14 +1058,14 @@ class TipSampleDilationWindow(QMainWindow):
         #print(type(config.dilation))
         #config.dilation=config.dilation/10
         np.savetxt('dilation.csv', config.dilation, delimiter=',')
-        print (config.dilation.max())
+        
 
         #apply afm color map and save image 
         #self.makeDIcolor()
         #config.dilation_img=cv2.applyColorMap(config.dilation, config.DIcolor)
         
         self.dilation_display_update()
-        
+        plt.show(block=False)
        
 
 
@@ -1069,19 +1086,23 @@ class TipSampleDilationWindow(QMainWindow):
     #=========================
     def makeDIcolor(self):
 
-        for i in range(0, 255):
+        # for i in range(0, 255):
 
-            if (i < 158):
-                config.DIcolor[i, 0, 2] = i / 157 * 255
-            elif (i >= 158):
-                config.DIcolor[i, 0, 2] = 255
+        #     if (i < 158):
+        #         config.DIcolor[i, 0, 2] = i / 157 * 255
+        #     elif (i >= 158):
+        #         config.DIcolor[i, 0, 2] = 255
 
-            config.DIcolor[i, 0, 1] = i
+        #     config.DIcolor[i, 0, 1] = i
 
-            if (i < 176):
-                config.DIcolor[i, 0, 0] = 0
-            elif (i >= 176):
-                config.DIcolor[i, 0, 0] = 67 + 188 * (i - 176) / 79
+        #     if (i < 176):
+        #         config.DIcolor[i, 0, 0] = 0
+        #     elif (i >= 176):
+        #         config.DIcolor[i, 0, 0] = 67 + 188 * (i - 176) / 79
+        rgb_values = np.loadtxt("rgb.csv",delimiter=',') 
+        cmap = LinearSegmentedColormap.from_list("my_cmap", rgb_values)
+        cmap=cmap.reversed()
+        return cmap
 
 
 
