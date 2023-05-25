@@ -805,14 +805,8 @@ class TipSampleDilationWindow(QMainWindow):
     #=========================
     def dosimulate(self):
         print("simulate")
-        starttime = datetime.datetime.now()
-        print ("Start time: " + str(starttime))
-        #self.createtip()
-        #one pixel dilation
         self.dilation()
-        print ("End time: " + str(datetime.datetime.now()))
-        print ("Simulation time: " + str(datetime.datetime.now() - starttime))
-        #final dilation
+        
 
     #=========================
     #save as png
@@ -1021,7 +1015,7 @@ class TipSampleDilationWindow(QMainWindow):
     # if dilation wave is updated check
     #=========================
     def dilation_display_update(self):
-        print ("updated")
+        #print ("updated")
         #self.image_label=QLabel(self.simulationresult)
         #img=Image.fromarray(img_array)
         #img.save('dilation.png')
@@ -1029,7 +1023,7 @@ class TipSampleDilationWindow(QMainWindow):
         #config.imgax.clear()
         img_array=(config.dilation/config.dilation.max())*255
         img_array=img_array.astype(np.uint8)
-        print (img_array.shape)
+        #print (img_array.shape)
         #np.savetxt('dilation_255.csv', img_array, delimiter=',')
         cmap=self.makeDIcolor()
         #img_array=cv2.applyColorMap(img_array, config.DIcolor)
@@ -1070,7 +1064,7 @@ class TipSampleDilationWindow(QMainWindow):
         if config.tipshape=="Paraboloid":
             i_xm=(1/config.dx)*math.sqrt(2*config.tipradius*(config.zcoordinate.max()-config.zcoordinate.min()))
             config.tipsize=2*math.ceil(i_xm)+1
-            print ("paraboloid")
+            #print ("paraboloid")
         
         elif config.tipshape=="Cone":
             r_crit=config.tipradius/math.sqrt(1+math.tan(config.tipangle*math.pi/180)**2)
@@ -1112,8 +1106,9 @@ class TipSampleDilationWindow(QMainWindow):
                         config.tipwave[iy][ix]=r_i/math.tan(config.tipangle*math.pi/180)-z_off
                     
 
-        createtipstart=datetime.datetime.now()
-        print ("create tip start time: "+str(createtipstart)) 
+        createtipend=datetime.datetime.now()
+        print ("create tip start time: "+str(createtipend)) 
+        print ("create tip time: "+str(createtipend-createtipstart))
         
         #print (config.tipwave)
         # print (config.tipsize)
@@ -1138,6 +1133,8 @@ class TipSampleDilationWindow(QMainWindow):
     #=========================
     def onepixeldilation(self):
         print ("one pixel dilation")
+        onepixelstart=datetime.datetime.now()
+        print ("one pixel dilation start time: "+str(onepixelstart))
         #config.onepixeldilation=np.zeros((config.pixelxdirection+2*config.tipsize, config.pixelydirection+2*config.tipsize))
         
         #make height map
@@ -1150,7 +1147,10 @@ class TipSampleDilationWindow(QMainWindow):
                 red_coord = bol_vec*config.zcoordinate
                 z_max=red_coord.max()
                 config.onepixeldilation[ix][iy]=z_max
-        
+
+        onepixelend=datetime.datetime.now()
+        print ("one pixel dilation end time: "+str(onepixelend))
+        print ("one pixel dilation time: "+str(onepixelend-onepixelstart))
         # onepixelx, onepixely=np.indices(config.onepixeldilation.shape)
         # figonepixel=plt.figure(num="onepixel")
         # oneax=figonepixel.add_subplot(111, projection='3d')
@@ -1176,6 +1176,8 @@ class TipSampleDilationWindow(QMainWindow):
     # make dilation
     #=========================
     def dilation(self):
+        starttime = datetime.datetime.now()
+        print ("Start time: " + str(starttime))
         config.xcoordinate=config.pdbplot['X']-config.pdbplot['X'].min()
         config.ycoordinate=config.pdbplot['Y']-config.pdbplot['Y'].min()
         config.zcoordinate=config.pdbplot['Z']-config.pdbplot['Z'].min()
@@ -1197,9 +1199,9 @@ class TipSampleDilationWindow(QMainWindow):
         self.onepixeldilation()
         #make tip
         self.createtip()
-        print("after create tip")
-        print (config.tipsize)
-        print (config.tipwave.shape)
+        #print("after create tip")
+        #print (config.tipsize)
+        #print (config.tipwave.shape)
 
         l_x=config.grid_sizex+2*config.tipsize
         l_y=config.grid_sizey+2*config.tipsize
@@ -1244,7 +1246,11 @@ class TipSampleDilationWindow(QMainWindow):
         #apply afm color map and save image 
         #self.makeDIcolor()
         #config.dilation_img=cv2.applyColorMap(config.dilation, config.DIcolor)
-        
+        #self.createtip()
+        #one pixel dilation
+        endtime = datetime.datetime.now()
+        print ("End time: " + str(endtime))
+        print ("Simulation time: " + str(endtime - starttime))
         self.dilation_display_update()
         plt.show(block=False)
        
