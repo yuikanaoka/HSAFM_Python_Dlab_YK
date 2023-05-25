@@ -805,9 +805,13 @@ class TipSampleDilationWindow(QMainWindow):
     #=========================
     def dosimulate(self):
         print("simulate")
+        starttime = datetime.datetime.now()
+        print ("Start time: " + str(starttime))
         #self.createtip()
         #one pixel dilation
         self.dilation()
+        print ("End time: " + str(datetime.datetime.now()))
+        print ("Simulation time: " + str(datetime.datetime.now() - starttime))
         #final dilation
 
     #=========================
@@ -1055,6 +1059,8 @@ class TipSampleDilationWindow(QMainWindow):
     #=========================
     def createtip(self):
         print("create tip")
+        createtipstart=datetime.datetime.now()
+        print ("create tip start time: "+str(createtipstart)) 
         
 
         z_off = (config.tipradius / 2) / math.tan(config.tipangle * math.pi / 180) ** 2
@@ -1106,6 +1112,8 @@ class TipSampleDilationWindow(QMainWindow):
                         config.tipwave[iy][ix]=r_i/math.tan(config.tipangle*math.pi/180)-z_off
                     
 
+        createtipstart=datetime.datetime.now()
+        print ("create tip start time: "+str(createtipstart)) 
         
         #print (config.tipwave)
         # print (config.tipsize)
