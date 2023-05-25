@@ -26,9 +26,13 @@ class FileImport:
 
 
     def getheader(self):
+        #print (config.files)
+        print ("row")
+        print (config.row)
 
         with open(config.files[self.row], "rb") as f:
             config.FileType = struct.unpack('i', f.read(4)) [0]
+            print("FileType=" + str(config.FileType))   
             #config.FileType = struct.unpack('l', f.read(4)) [0]
             reserved=""
             if config.FileType == 1:
@@ -52,9 +56,9 @@ class FileImport:
                 config.ScanTryNum = struct.unpack('i', f.read(4)) [0]
                 #print("ScanTryNum=" +str(config.ScanTryNum))
                 config.XPixel = struct.unpack('i', f.read(4)) [0]
-                #print("XPixel=" +str(config.XPixel))
+                print("XPixel=" +str(config.XPixel))
                 config.YPixel = struct.unpack('i', f.read(4)) [0]
-                #print("YPixel=" +str(config.YPixel))
+                print("YPixel=" +str(config.YPixel))
                 config.XScanSize = struct.unpack('i', f.read(4)) [0]
                 #print("XScanSize=" +str(config.XScanSize))
                 config.YScanSize = struct.unpack('i', f.read(4)) [0]

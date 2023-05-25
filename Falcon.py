@@ -422,6 +422,7 @@ class MainWindow(QMainWindow):
         # item = self.filesTable.item(row, 0)
         # fv =  FileVariables
         config.row = row
+        
         gh = FileImport(config.row)
         gh.getheader()
 
@@ -470,8 +471,9 @@ class MainWindow(QMainWindow):
 
             QApplication.setOverrideCursor(Qt.WaitCursor)
             config.files = self.fileList.setup(self.dirname, '.asd')
-            # print(self.files)
-            # prnt("OK")
+            #print ("list of loaded files:")
+            #print(config.files)
+            
             # print(files)
             maxCnt = self.fileList.length
             if (maxCnt > 0):
@@ -480,6 +482,7 @@ class MainWindow(QMainWindow):
                 self.pbar.setMaximum(maxCnt)
                 self.fileList.start()
                 self.showFiles(config.files)
+                print ("file show on table")
             else:
                 QApplication.restoreOverrideCursor()
                 QMessageBox.about(self, "Caution!", "asd files do not exist")
@@ -509,6 +512,8 @@ class MainWindow(QMainWindow):
             self.filesTable.setItem(row, 1, sizeItem)
 
         config.FileNum = len(files)
+        print ("number of loaded files:")
+        print (config.FileNum)
         self.filesFoundLabel.setText("%d file(s) found (Click on a file to open it)" % len(files))
 
     def showParams(self):

@@ -436,6 +436,7 @@ class TipSampleDilationWindow(QMainWindow):
         self.saveasd = QPushButton("Save as ASD")
         self.saveasd.setFixedSize(450/2, 50)
         self.saveasd.setStyleSheet("QPushButton { font-size: 15px; font-weight: bold; }")  # Set the font size to 20px
+        self.saveasd.clicked.connect(self.saveasdfunc)
         self.saveasd_layout.addWidget(self.saveasd)
         self.horizontal_2_layout.addLayout(self.saveasd_layout)
 
@@ -457,23 +458,26 @@ class TipSampleDilationWindow(QMainWindow):
         self.horizontal_3_layout = QHBoxLayout()
 
         # =======================
-        # save orientation
+        # save orientation button
         # =======================
         self.saveorientation_layout = QVBoxLayout()
         self.saveorientation = QPushButton("Save Orientation")
         self.saveorientation.setFixedSize(450/2, 50)
         self.saveorientation.setStyleSheet("QPushButton { font-size: 15px; font-weight: bold; }")  # Set the font size to 20px
+        self.saveorientation.clicked.connect(self.saveorientationfunc)
         self.saveorientation_layout.addWidget(self.saveorientation)
         self.horizontal_3_layout.addLayout(self.saveorientation_layout)
+
         
 
         # =======================
-        #Load orientation
+        #Load orientation button
         # =======================
         self.loadorientation_layout = QVBoxLayout()
         self.loadorientation = QPushButton("Load Orientation")
         self.loadorientation.setFixedSize(450/2, 50)
         self.loadorientation.setStyleSheet("QPushButton { font-size: 15px; font-weight: bold; }")  # Set the font size to 20px
+        self.loadorientation.clicked.connect(self.loadorientationfunc)
         self.loadorientation_layout.addWidget(self.loadorientation)
         self.horizontal_3_layout.addLayout(self.loadorientation_layout)
 
@@ -490,6 +494,7 @@ class TipSampleDilationWindow(QMainWindow):
         self.topview = QPushButton("Top View")
         self.topview.setFixedSize(450/3, 50)
         self.topview.setStyleSheet("QPushButton { font-size: 15px; font-weight: bold; }")  # Set the font size to 20px
+        self.topview.clicked.connect(self.settopview)
         self.topview_layout.addWidget(self.topview)
         self.horizontal_4_layout.addLayout(self.topview_layout)
 
@@ -501,6 +506,7 @@ class TipSampleDilationWindow(QMainWindow):
         self.xzview = QPushButton("XZ View")
         self.xzview.setFixedSize(450/3, 50)
         self.xzview.setStyleSheet("QPushButton { font-size: 15px; font-weight: bold; }")  # Set the font size to 20px
+        self.xzview.clicked.connect(self.setxzview)
         self.xzview_layout.addWidget(self.xzview)
         self.horizontal_4_layout.addLayout(self.xzview_layout)
 
@@ -512,6 +518,7 @@ class TipSampleDilationWindow(QMainWindow):
         self.yzview = QPushButton("YZ View")
         self.yzview.setFixedSize(450/3, 50)
         self.yzview.setStyleSheet("QPushButton { font-size: 15px; font-weight: bold; }")  # Set the font size to 20px
+        self.yzview.clicked.connect(self.setyzview)
         self.yzview_layout.addWidget(self.yzview)
         self.horizontal_4_layout.addLayout(self.yzview_layout)
 
@@ -710,6 +717,9 @@ class TipSampleDilationWindow(QMainWindow):
             config.ax.set_xlim([config.pdbplot['X'].min(), config.pdbplot['X'].max()])
             config.ax.set_ylim([config.pdbplot['Y'].min(), config.pdbplot['Y'].max()])
             config.ax.set_zlim([config.pdbplot['Z'].min(), config.pdbplot['Z'].max()])
+            config.ax.set_xlabel('X')
+            config.ax.set_ylabel('Y')
+            config.ax.set_zlabel('Z')
             plt.show(block=False)
             plt.draw()
         else:
@@ -727,6 +737,9 @@ class TipSampleDilationWindow(QMainWindow):
             config.ax.set_xlim([config.pdbplot['X'].min(), config.pdbplot['X'].max()])
             config.ax.set_ylim([config.pdbplot['Y'].min(), config.pdbplot['Y'].max()])
             config.ax.set_zlim([config.pdbplot['Z'].min(), config.pdbplot['Z'].max()])
+            config.ax.set_xlabel('X')
+            config.ax.set_ylabel('Y')
+            config.ax.set_zlabel('Z')
             plt.show(block=False)
             plt.draw()
 
@@ -746,6 +759,9 @@ class TipSampleDilationWindow(QMainWindow):
             config.ax.set_xlim([config.pdbplot['X'].min(), config.pdbplot['X'].max()])
             config.ax.set_ylim([config.pdbplot['Y'].min(), config.pdbplot['Y'].max()])
             config.ax.set_zlim([config.pdbplot['Z'].min(), config.pdbplot['Z'].max()])
+            config.ax.set_xlabel('X')
+            config.ax.set_ylabel('Y')
+            config.ax.set_zlabel('Z')
             plt.draw()
         else:
             print(config.atomtype)
@@ -758,6 +774,9 @@ class TipSampleDilationWindow(QMainWindow):
             config.ax.set_xlim([config.pdbplot['X'].min(), config.pdbplot['X'].max()])
             config.ax.set_ylim([config.pdbplot['Y'].min(), config.pdbplot['Y'].max()])
             config.ax.set_zlim([config.pdbplot['Z'].min(), config.pdbplot['Z'].max()])
+            config.ax.set_xlabel('X')
+            config.ax.set_ylabel('Y')
+            config.ax.set_zlabel('Z')
             plt.draw()
 
         
@@ -773,6 +792,9 @@ class TipSampleDilationWindow(QMainWindow):
         config.ax.set_xlim([config.pdbplot['X'].min(), config.pdbplot['X'].max()])
         config.ax.set_ylim([config.pdbplot['Y'].min(), config.pdbplot['Y'].max()])
         config.ax.set_zlim([config.pdbplot['Z'].min(), config.pdbplot['Z'].max()])
+        config.ax.set_xlabel('X')
+        config.ax.set_ylabel('Y')
+        config.ax.set_zlabel('Z')
         plt.draw()
 
 
@@ -795,6 +817,157 @@ class TipSampleDilationWindow(QMainWindow):
         print("save png")
         plt.imsave('simulatedafm.png',config.savepng)
         print ("saved")
+    
+
+    #=========================
+    # save as asd file
+    #=========================
+    def saveasdfunc(self):
+        file_dialog = QFileDialog()
+        file_dialog.setAcceptMode(QFileDialog.AcceptSave)
+        file_dialog.setDefaultSuffix('.asd')
+        
+        if file_dialog.exec_() == QFileDialog.Accepted:
+            save_file_path = file_dialog.selectedFiles()[0]
+
+
+            if save_file_path:
+                
+                FileType = 1
+                FileHeaderSizeForSave = 165 + len("Nobody") + len("Simulated Image")
+                FrameHeaderSize = 32
+                TextEncoding = 932
+                OpeNameSize = 9
+                CommentSizeForSave = 0  # コメントの長さに応じて修正が必要
+                DataType1ch = 20564
+                DataType2ch = 0
+                FrameNum = 1
+                ImageNum = 1
+                ScanDirection = 0
+                ScanTryNum = 1
+                TXPixel = config.dilation.shape[1]
+                TYPixel = config.dilation.shape[0]
+                TXScanSize = round(TXPixel * config.dx)
+                TYScanSize = round(TYPixel * config.dy)
+                AveFlag = 0
+                AverageNum = 1
+                Year = 2023  # 年に応じて修正が必要
+                Month = 5  # 月に応じて修正が必要
+                Day = 16  # 日に応じて修正が必要
+                Hour = 12  # 時に応じて修正が必要
+                Minute = 0  # 分に応じて修正が必要
+                Second = 0  # 秒に
+                XRound = 0
+                YRound = 0
+                FrameTime = 1.0
+                Sensitivity = 1.0
+                PhaseSens = 1.0
+                Offset = 0  # Offsetの値に応じて修正が必要
+                MachineNo = 1
+                ADRange = 262144
+                ADResolution = 12
+                MaxScanSizeX = 4000
+                MaxScanSizeY = 1700
+                PiezoConstX = 1.0
+                PiezoConstY = 1.0
+                PiezoConstZ = 20.0
+                DriverGainZ = 2.0
+                Maxdata=2775
+                Minidata=2716
+
+                OpeName = "Nobody"
+                Comment = "Simulated Image"
+                
+                ImageIndex=1
+                LaserFlag=0
+                CurrentNum=1
+                Xoffset=0
+                Yoffset=0
+                Xtilt=0
+                Ytilt=0
+                show2chflag=0
+                Reserved=0
+
+                index=0
+
+
+                # ファイルの作成とデータの書き込み
+                with open(save_file_path, "wb") as f:
+                    # ヘッダ情報の書き込み
+
+                    f.write(struct.pack('i', FileType))
+                    f.write(struct.pack('i', FileHeaderSizeForSave))
+                    f.write(struct.pack('i', FrameHeaderSize))
+                    f.write(struct.pack('i', TextEncoding))
+                    f.write(struct.pack('i', OpeNameSize))
+                    f.write(struct.pack('i', CommentSizeForSave))
+                    f.write(struct.pack('i', DataType1ch))
+                    f.write(struct.pack('i', DataType2ch))
+                    f.write(struct.pack('i', FrameNum))
+                    f.write(struct.pack('i', ImageNum))
+                    f.write(struct.pack('i', ScanDirection))
+                    f.write(struct.pack('i', ScanTryNum))
+                    f.write(struct.pack('i', TXPixel))
+                    f.write(struct.pack('i', TYPixel))
+                    f.write(struct.pack('i', TXScanSize))
+                    f.write(struct.pack('i', TYScanSize))
+                    f.write(struct.pack('B', AveFlag))
+                    f.write(struct.pack('i', AverageNum))
+                    f.write(struct.pack('i', Year))
+                    f.write(struct.pack('i', Month))
+                    f.write(struct.pack('i', Day))
+                    f.write(struct.pack('i', Hour))
+                    f.write(struct.pack('i', Minute))
+                    f.write(struct.pack('i', Second))
+                    f.write(struct.pack('i', XRound))
+                    f.write(struct.pack('i', YRound))
+                    f.write(struct.pack('f', FrameTime))
+                    f.write(struct.pack('f', Sensitivity))
+                    f.write(struct.pack('f', PhaseSens))
+                    f.write(struct.pack('i', Offset))
+                    f.write(struct.pack('i', Offset))
+                    f.write(struct.pack('i', Offset))
+                    f.write(struct.pack('i', Offset))
+                    f.write(struct.pack('i', MachineNo))
+                    f.write(struct.pack('i', ADRange))
+                    f.write(struct.pack('i', ADResolution))
+                    f.write(struct.pack('f', MaxScanSizeX))
+                    f.write(struct.pack('f', MaxScanSizeY))
+                    f.write(struct.pack('f', PiezoConstX))
+                    f.write(struct.pack('f', PiezoConstY))
+                    f.write(struct.pack('f', PiezoConstZ))
+                    f.write(struct.pack('f', DriverGainZ))
+                    
+                    # オペレータ名とコメントの書き込み
+                    f.write(OpeName.encode("utf-8"))
+                    f.write(Comment.encode("utf-8"))
+                    
+                    f.seek(FileHeaderSizeForSave + (FrameHeaderSize + 2 * TXPixel * TYPixel) * index)
+                    print (FileHeaderSizeForSave + (FrameHeaderSize + 2 * TXPixel * TYPixel) * index)
+                    CurrentNum=0
+                    Maxdata=round(np.max(config.dilation))
+                    Minidata=round(np.min(config.dilation))
+                    f.write(struct.pack('I', CurrentNum))
+                    f.write(struct.pack('H', Maxdata))
+                    f.write(struct.pack('H', Minidata))
+                    f.write(struct.pack('h', Xoffset))
+                    f.write(struct.pack('h', Yoffset))
+                    f.write(struct.pack('f', Xtilt))
+                    f.write(struct.pack('f', Ytilt))
+                    f.write(struct.pack('B', LaserFlag))
+                    f.write(struct.pack('B', Reserved))
+                    f.write(struct.pack('h', Reserved))
+                    f.write(struct.pack('i', Reserved))
+                    f.write(struct.pack('i', Reserved))
+
+
+                    
+                    
+                    for Ynum in range(TYPixel):
+                        for Xnum in range(TXPixel):
+                            data = ((5.0 - config.dilation[Ynum][Xnum] / PiezoConstZ / DriverGainZ) * 4096.0) / 10.0
+                            f.write(struct.pack('f', data))
+                f.close()
 
 
     #=========================
@@ -1103,22 +1276,118 @@ class TipSampleDilationWindow(QMainWindow):
         cmap = LinearSegmentedColormap.from_list("my_cmap", rgb_values)
         cmap=cmap.reversed()
         return cmap
+    
+    #=========================
+    # save orientation
+    #=========================
+    def saveorientationfunc(self):
+        config.memrotmatrix
+        file_dialog = QFileDialog()
+        file_dialog.setAcceptMode(QFileDialog.AcceptSave)
+        file_dialog.setDefaultSuffix('.txt')
+        file_dialog.exec_()
+        file_path = file_dialog.selectedFiles()[0]
 
+        if file_path:
+            # 保存するデータを準備 (例: ダミーデータ)
+            data = config.memrotmatrix
 
+            # ファイルに保存
+            np.savetxt(file_path, data)
+    
+    #=========================
+    # load orientation
+    #=========================
+    def loadorientationfunc(self):
+        file_dialog = QFileDialog()
+        file_dialog.setAcceptMode(QFileDialog.AcceptOpen)
+        file_dialog.setDefaultSuffix('.txt')
+        file_dialog.exec_()
+        file_path = file_dialog.selectedFiles()[0]
 
-        
-
-
-
-
-
-
-        
-
-        
+        if file_path:
+            # ファイルから読み込み
+            data = np.loadtxt(file_path)
+            config.memrotmatrix=data
+            self.orientationdisplay_update()
+            
+    #=========================
+    # update orientation by loading memrotmatrix
+    #=========================
+    def orientationdisplay_update(self):
+        coordinates = config.pdbplot[["X", "Y", "Z"]].values
+        rotated_coordinates = np.dot(coordinates, config.memrotmatrix.T)
+        config.pdbplot[["X", "Y", "Z"]] = rotated_coordinates
+        print ("after rload orientation")
+        print (len(config.pdbplot))
+        self.display_update()
+    
+    #=========================
+    # set top view xy view
+    #=========================
+    def settopview(self):
+        config.sc._offsets3d = (config.pdbplot['X'], config.pdbplot['Y'], config.pdbplot['Z'])
+        config.sc.set_facecolor(config.atomtype_color[config.atomtype])
+        config.sc.set_edgecolor(config.atomtype_color[config.atomtype])
+        config.ax.set_xlim([config.pdbplot['X'].min(), config.pdbplot['X'].max()])
+        config.ax.set_ylim([config.pdbplot['Y'].min(), config.pdbplot['Y'].max()])
+        config.ax.set_zlim([config.pdbplot['Z'].min(), config.pdbplot['Z'].max()])
+        config.ax.set_xlabel('X')
+        config.ax.set_ylabel('Y')
+        config.ax.set_zlabel('Z')
+        config.ax.view_init(elev=90, azim=0)  # XY平面から見た角度に設定
+        plt.draw()
+    
+    #=========================
+    # set side view xz view
+    #=========================
+    def setxzview(self):
+        config.sc._offsets3d = (config.pdbplot['X'], config.pdbplot['Y'], config.pdbplot['Z'])
+        config.sc.set_facecolor(config.atomtype_color[config.atomtype])
+        config.sc.set_edgecolor(config.atomtype_color[config.atomtype])
+        config.ax.set_xlim([config.pdbplot['X'].min(), config.pdbplot['X'].max()])
+        config.ax.set_ylim([config.pdbplot['Y'].min(), config.pdbplot['Y'].max()])
+        config.ax.set_zlim([config.pdbplot['Z'].min(), config.pdbplot['Z'].max()])
+        config.ax.set_xlabel('X')
+        config.ax.set_ylabel('Y')
+        config.ax.set_zlabel('Z')
+        config.ax.view_init(elev=0, azim=0)
+        plt.draw()
+    
+    #=========================
+    # set side view yz view
+    #=========================
+    def setyzview(self):
+        config.sc._offsets3d = (config.pdbplot['X'], config.pdbplot['Y'], config.pdbplot['Z'])
+        config.sc.set_facecolor(config.atomtype_color[config.atomtype])
+        config.sc.set_edgecolor(config.atomtype_color[config.atomtype])
+        config.ax.set_xlim([config.pdbplot['X'].min(), config.pdbplot['X'].max()])
+        config.ax.set_ylim([config.pdbplot['Y'].min(), config.pdbplot['Y'].max()])
+        config.ax.set_zlim([config.pdbplot['Z'].min(), config.pdbplot['Z'].max()])
+        config.ax.set_xlabel('X')
+        config.ax.set_ylabel('Y')
+        config.ax.set_zlabel('Z')
+        config.ax.view_init(elev=0, azim=90)
+        plt.draw()
     
 
-    
- 
+
+
+
+
+                        
+
+
+
+
+
+
+                        
+
+                        
+                    
+
+                    
+                
 
 
