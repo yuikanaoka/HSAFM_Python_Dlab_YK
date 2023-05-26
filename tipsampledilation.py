@@ -52,6 +52,8 @@ import lineprofile as lp
 import removebackground as rb
 import noisefilter as nf
 
+import dilationfunctionmodule 
+
 class TipSampleDilationWindow(QMainWindow):
 
     def __init__(self):
@@ -805,7 +807,19 @@ class TipSampleDilationWindow(QMainWindow):
     #=========================
     def dosimulate(self):
         print("simulate")
+        #do simulation with python
         self.dilation()
+        print(type(config.tipradius))
+        print(type(config.tipshape))
+        print(type(config.tipsize))
+        print(type(config.zcoordinate))
+        print(type(config.tipangle))
+        
+        #do simulation with cython
+        # dilationis=dilationfunctionmodule.dilationfunction()
+        # dilationis.dilation()
+        # self.dilation_display_update()
+        # plt.show(block=False)
         
 
     #=========================

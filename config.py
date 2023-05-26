@@ -134,9 +134,9 @@ sc=None
 atomtype_color={"C":"red","N":"blue","O":"green","ALL":"black"}
 
 #tip parameter
-tipradius = 1
+tipradius = 1.0
 tipshape = "Cone"
-tipangle=10
+tipangle=10.0
 tipsize=None
 tipsize_half=None
 tipwave=None
