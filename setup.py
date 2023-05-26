@@ -7,7 +7,7 @@ ext_modules = [
     Extension(
         'dilationfunctionmodule',
         ['dilationfunc.pyx'],
-        include_dirs=[np.get_include()],
+        include_dirs=[np.get_include()]
     )
 ]
 

@@ -52,7 +52,8 @@ import lineprofile as lp
 import removebackground as rb
 import noisefilter as nf
 
-import dilationfunctionmodule 
+import dilationfunctionmodule
+from concurrent.futures import ThreadPoolExecutor
 
 class TipSampleDilationWindow(QMainWindow):
 
@@ -128,8 +129,9 @@ class TipSampleDilationWindow(QMainWindow):
         #pixel x direction
         self.pixelxdirection_layout = QVBoxLayout()  # Create a new QVBoxLayout for the shape
         self.pixelxdirection_label = QLabel("Pixel x direction")
-        self.pixelxdirection = QDoubleSpinBox()
+        self.pixelxdirection = QSpinBox()
         self.pixelxdirection.setRange(50, 100)
+        self.pixelxdirection.setSingleStep(1)
         self.pixelxdirection_layout.addWidget(self.pixelxdirection_label)
         self.pixelxdirection_layout.addWidget(self.pixelxdirection)
         self.pixelxdirection.valueChanged.connect(self.pixelxdirection_change)
@@ -137,7 +139,7 @@ class TipSampleDilationWindow(QMainWindow):
         #tip angle
         self.tipangle_layout = QVBoxLayout()  # Create a new QVBoxLayout for the shape
         self.tipangle_label = QLabel("Tip Angle")
-        self.tipangle = QDoubleSpinBox()
+        self.tipangle = QSpinBox()
         self.tipangle.setRange(1, 100)
         self.tipangle.setSingleStep(1)
         self.tipangle.setValue(10)
@@ -808,16 +810,31 @@ class TipSampleDilationWindow(QMainWindow):
     def dosimulate(self):
         print("simulate")
         #do simulation with python
-        self.dilation()
-        print(type(config.tipradius))
-        print(type(config.tipshape))
-        print(type(config.tipsize))
-        print(type(config.zcoordinate))
-        print(type(config.tipangle))
+        #self.dilation()
+        # print(type(config.tipradius))
+        # print(type(config.tipshape))
+        # print(type(config.tipsize))
+        # print(type(config.zcoordinate))
+        # print(type(config.tipangle))
+        # print(type(config.xcoordinate))
+        # print(type(config.pdbplot["X"]))
+        # print(type(config.pixelxdirection))
+        # print(type(config.dx))
+        # print(type(config.dy))
         
         #do simulation with cython
-        # dilationis=dilationfunctionmodule.dilationfunction()
-        # dilationis.dilation()
+        print(type(config.tipradius))
+        print(type(config.tipshape))
+        print(type(config.tipangle))
+        config.pdbplot_x=config.pdbplot["X"].to_numpy(dtype=np.float32)
+        config.pdbplot_y=config.pdbplot["Y"].to_numpy(dtype=np.float32)
+        config.pdbplot_z=config.pdbplot["Z"].to_numpy(dtype=np.float32)
+        print(type(config.pdbplot_x))
+        print(type(config.pdbplot_y))
+        print(type(config.pdbplot_z))
+        result =dilationfunctionmodule.dilation(config.pdbplot_x, config.pdbplot_y, config.pdbplot_z, config.pixelxdirection, config.tipradius, config.tipshape, config.tipangle)
+        print(result)
+        
         # self.dilation_display_update()
         # plt.show(block=False)
         
@@ -1075,9 +1092,18 @@ class TipSampleDilationWindow(QMainWindow):
         r_crit=config.tipradius/math.tan(config.tipangle*math.pi/180)
         z_crit=r_crit/math.tan(config.tipangle*math.pi/180)-z_off
 
+        # print(type(z_off))
+        # print(type(r_crit))
+        # print(type(z_crit))
+
         if config.tipshape=="Paraboloid":
             i_xm=(1/config.dx)*math.sqrt(2*config.tipradius*(config.zcoordinate.max()-config.zcoordinate.min()))
+            # print("i_xm")
+            # print(type(i_xm))
             config.tipsize=2*math.ceil(i_xm)+1
+            # print("tipsize")
+            # print(type(config.tipsize))
+
             #print ("paraboloid")
         
         elif config.tipshape=="Cone":
@@ -1089,6 +1115,14 @@ class TipSampleDilationWindow(QMainWindow):
             else:
                 i_xm=(1/config.dx)*((config.zcoordinate.max()-config.zcoordinate.min())+z_off)*math.tan(config.tipangle*math.pi/180)
             config.tipsize=2*math.ceil(i_xm)+1
+            # print(type(z_off))
+            # print(type(r_crit))
+            # print(type(z_crit))
+
+            # print("i_xm")
+            # print(type(i_xm))
+            # print("tipsize")
+            # print(type(config.tipsize))
         
                              
         config.tipsize_half=math.trunc(config.tipsize/2)+1
@@ -1124,24 +1158,10 @@ class TipSampleDilationWindow(QMainWindow):
         print ("create tip start time: "+str(createtipend)) 
         print ("create tip time: "+str(createtipend-createtipstart))
         
-        #print (config.tipwave)
-        # print (config.tipsize)
-        # print (config.tipwave.shape)
-        # print (type(config.tipwave))
-        # tipwavex,tipwavey=np.indices(config.tipwave.shape)
-
-        
-        # figtip=plt.figure(num="Tip")
-        # oneax=figtip.add_subplot(111, projection='3d')
-        # oneax.plot_surface(tipwavex,tipwavey,config.tipwave)
-        # #plt.imshow(config.tipwave)
-        # plt.show(block=False)
-        # plt.draw()
-
         
 
         
-
+       
     #=========================
     # one pixel dilation
     #=========================
@@ -1165,27 +1185,50 @@ class TipSampleDilationWindow(QMainWindow):
         onepixelend=datetime.datetime.now()
         print ("one pixel dilation end time: "+str(onepixelend))
         print ("one pixel dilation time: "+str(onepixelend-onepixelstart))
-        # onepixelx, onepixely=np.indices(config.onepixeldilation.shape)
-        # figonepixel=plt.figure(num="onepixel")
-        # oneax=figonepixel.add_subplot(111, projection='3d')
-        # oneax.scatter(onepixelx,onepixely,config.onepixeldilation)
-        # oneax.set_xlabel('X axis')
-        # oneax.set_ylabel('Y axis')
-        # oneax.set_zlabel('Z axis')
-        # plt.show(block=False)
-        # plt.draw()
-
-        # img_array=(config.onepixeldilation/config.onepixeldilation.max())*255
-        # img_array=img_array.astype(np.uint8)
-        # #img=Image.fromarray(img_array)
-        # #img.save('dilation.png')
-        # imgone=plt.figure(num="Simlated one pixel img")
-        # imgax=imgone.add_subplot(111)
-        # imgax.imshow(img_array)
-        # plt.show(block=False)
-
-
+        
     
+    # #=========================
+    # one pixel dilation multi thread
+    # #=========================
+
+    # def onepixeldilation(self):
+    #     print("one pixel dilation")
+    #     onepixelstart = datetime.datetime.now()
+    #     print("one pixel dilation start time: " + str(onepixelstart))
+        
+    #     config.onepixeldilation = np.zeros((config.grid_sizex, config.grid_sizey), dtype=np.float32)
+
+    #     with ThreadPoolExecutor() as executor:
+    #         futures = []
+    #         for iy in range(config.grid_sizey):
+    #             for ix in range(config.grid_sizex):
+    #                 future = executor.submit(self.calculate_pixel_value, iy, ix)
+    #                 futures.append(future)
+            
+    #         for future in futures:
+    #             future.result()
+    #     print(config.onepixeldilation)
+    #     onepixelend = datetime.datetime.now()
+    #     print("one pixel dilation end time: " + str(onepixelend))
+    #     print("one pixel dilation time: " + str(onepixelend - onepixelstart))
+
+    # def calculate_pixel_value(self, iy, ix):
+    #     y_min = (iy - 1) * config.dy
+    #     y_max = iy * config.dy
+    #     x_min = (ix - 1) * config.dx
+    #     x_max = ix * config.dx
+        
+    #     mask = (
+    #         (config.ycoordinate >= y_min) &
+    #         (config.ycoordinate < y_max) &
+    #         (config.xcoordinate >= x_min) &
+    #         (config.xcoordinate < x_max) &
+    #         (config.zcoordinate > 0)
+    #     )
+    #     z_max = np.max(config.zcoordinate[mask])
+    #     config.onepixeldilation[ix, iy] = z_max
+    
+  
     #=========================
     # make dilation
     #=========================
@@ -1223,13 +1266,7 @@ class TipSampleDilationWindow(QMainWindow):
         config.dilationborder[config.tipsize:l_x-config.tipsize,config.tipsize:l_y-config.tipsize]=config.onepixeldilation
         img_array_border=(config.dilationborder/config.dilationborder.max())*255
         img_array_border=img_array_border.astype(np.uint8)
-        #img=Image.fromarray(img_array)
-        #img.save('dilation.png')
-        # imgborderfig=plt.figure(num="dilation border img")
-        # imgborderax=imgborderfig.add_subplot(111)
-        # imgborderax.imshow(img_array_border)
-        # plt.show(block=False)
-
+        
         config.dilation=np.zeros((l_x,l_y))
         #print (l_x)
         #print (l_y)
@@ -1238,30 +1275,15 @@ class TipSampleDilationWindow(QMainWindow):
         #make dilation
         for ix in range(0,l_x-config.tipwave.shape[0]):
             for iy in range(0,l_y-config.tipwave.shape[1]):
-                #print (iy)
-                #print (iy+config.tipsize)
-
-                #print(ix)
-                # print(ix+config.tipsize)
+                
                 z_diffmap=config.dilationborder[ix:ix+config.tipsize,iy:iy+config.tipsize]-config.tipwave
-                # print ("ok")
-                # print(z_diffmap.shape)
-                # print ("======")
                 displacement=z_diffmap.max()
                 config.dilation[ix+config.tipsize_half][iy+config.tipsize_half]=displacement
         
-        #config.dilation=config.dilation/(config.dilation.max())
-        #print ("type")
-        #print(type(config.dilation))
-        #config.dilation=config.dilation/10
+       
         np.savetxt('dilation.csv', config.dilation, delimiter=',')
         
 
-        #apply afm color map and save image 
-        #self.makeDIcolor()
-        #config.dilation_img=cv2.applyColorMap(config.dilation, config.DIcolor)
-        #self.createtip()
-        #one pixel dilation
         endtime = datetime.datetime.now()
         print ("End time: " + str(endtime))
         print ("Simulation time: " + str(endtime - starttime))
@@ -1271,35 +1293,11 @@ class TipSampleDilationWindow(QMainWindow):
 
 
 
-
-        # dilationx, dilationy=np.indices(config.dilation.shape)
-        # figdilation=plt.figure(num="dilation")
-        # dilaax=figdilation.add_subplot(111, projection='3d')
-        # dilaax.scatter(dilationx,dilationy,config.dilation)
-        # dilaax.set_xlabel('X axis')
-        # dilaax.set_ylabel('Y axis')
-        # dilaax.set_zlabel('Z axis')
-        # plt.show(block=False)
-        # plt.draw()
-
     #=========================
     # make color map
     #=========================
     def makeDIcolor(self):
 
-        # for i in range(0, 255):
-
-        #     if (i < 158):
-        #         config.DIcolor[i, 0, 2] = i / 157 * 255
-        #     elif (i >= 158):
-        #         config.DIcolor[i, 0, 2] = 255
-
-        #     config.DIcolor[i, 0, 1] = i
-
-        #     if (i < 176):
-        #         config.DIcolor[i, 0, 0] = 0
-        #     elif (i >= 176):
-        #         config.DIcolor[i, 0, 0] = 67 + 188 * (i - 176) / 79
         rgb_values = np.loadtxt("rgb.csv",delimiter=',') 
         cmap = LinearSegmentedColormap.from_list("my_cmap", rgb_values)
         cmap=cmap.reversed()
