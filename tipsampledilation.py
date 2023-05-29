@@ -810,7 +810,7 @@ class TipSampleDilationWindow(QMainWindow):
     def dosimulate(self):
         print("simulate")
         #do simulation with python
-        #self.dilation()
+        self.dilation()
         # print(type(config.tipradius))
         # print(type(config.tipshape))
         # print(type(config.tipsize))
@@ -823,17 +823,17 @@ class TipSampleDilationWindow(QMainWindow):
         # print(type(config.dy))
         
         #do simulation with cython
-        print(type(config.tipradius))
-        print(type(config.tipshape))
-        print(type(config.tipangle))
-        config.pdbplot_x=config.pdbplot["X"].to_numpy(dtype=np.float32)
-        config.pdbplot_y=config.pdbplot["Y"].to_numpy(dtype=np.float32)
-        config.pdbplot_z=config.pdbplot["Z"].to_numpy(dtype=np.float32)
-        print(type(config.pdbplot_x))
-        print(type(config.pdbplot_y))
-        print(type(config.pdbplot_z))
-        result =dilationfunctionmodule.dilation(config.pdbplot_x, config.pdbplot_y, config.pdbplot_z, config.pixelxdirection, config.tipradius, config.tipshape, config.tipangle)
-        print(result)
+        # print(type(config.tipradius))
+        # print(type(config.tipshape))
+        # print(type(config.tipangle))
+        # config.pdbplot_x=config.pdbplot["X"].to_numpy(dtype=np.float32)
+        # config.pdbplot_y=config.pdbplot["Y"].to_numpy(dtype=np.float32)
+        # config.pdbplot_z=config.pdbplot["Z"].to_numpy(dtype=np.float32)
+        # print(type(config.pdbplot_x))
+        # print(type(config.pdbplot_y))
+        # print(type(config.pdbplot_z))
+        # result =dilationfunctionmodule.dilation(config.pdbplot_x, config.pdbplot_y, config.pdbplot_z, config.pixelxdirection, config.tipradius, config.tipshape, config.tipangle)
+        # print(result)
         
         # self.dilation_display_update()
         # plt.show(block=False)
@@ -844,8 +844,23 @@ class TipSampleDilationWindow(QMainWindow):
     #=========================
     def savepngfunc(self):
         print("save png")
-        plt.imsave('simulatedafm.png',config.savepng)
-        print ("saved")
+        file_dialog = QFileDialog()
+        file_dialog.setAcceptMode(QFileDialog.AcceptSave)
+        file_dialog.setDefaultSuffix('.png')
+        if file_dialog.exec_() == QFileDialog.Accepted:
+            selected_file = file_dialog.selectedFiles()[0]
+            img_array=(config.dilation/config.dilation.max())*255
+            img_array=img_array.astype(np.uint8)
+            cmap=self.makeDIcolor()
+            img_array=cmap(img_array)
+            image=Image.fromarray(img_array)
+            image.save(selected_file)
+
+            
+            
+            print("PNG saved.")
+
+        
     
 
     #=========================
@@ -1059,7 +1074,7 @@ class TipSampleDilationWindow(QMainWindow):
         cmap=self.makeDIcolor()
         #img_array=cv2.applyColorMap(img_array, config.DIcolor)
         #img_array=cv2.cvtColor(img_array, cv2.COLOR_BGR2RGB)
-        config.savepng=cmap(img_array)
+        #config.savepng=cmap(img_array)
         #plt.imsave('dilation.png',config.savepng)
         #config.imgfig=plt.figure(num="dilation img")
         #config.imgax=config.imgfig.add_subplot(111)
