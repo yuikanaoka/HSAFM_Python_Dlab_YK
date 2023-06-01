@@ -108,9 +108,9 @@ class FileImport:
                 config.PiezoConstY = struct.unpack('f', f.read(4)) [0]
                 #print("PiezoConstY=" +str(config.PiezoConstY))
                 config.PiezoConstZ = struct.unpack('f', f.read(4)) [0]
-                #print("PiezoConstZ=" +str(config.PiezoConstZ))
+                print("PiezoConstZ=" +str(config.PiezoConstZ))
                 config.DriverGainZ = struct.unpack('f', f.read(4)) [0]
-                #print("DriverGainZ=" +str(config.DriverGainZ))
+                print("DriverGainZ=" +str(config.DriverGainZ))
                 f.seek(config.FileHeaderSize-config.CommentSize-config.OpeNameSize)
                 #config.OpeName = ""
                 #for line in range(1,10):
@@ -138,10 +138,10 @@ class FileImport:
                 #print("CurrentNum=" +str(config.CurrentNum))
 
                 config.MaxData = struct.unpack('H', f.read(2)) [0]
-                #print("MaxData=" +str(config.MaxData))
+                print("MaxData=" +str(config.MaxData))
 
                 config.MiniData = struct.unpack('H', f.read(2)) [0]
-                #print("MiniData=" +str(config.MiniData))
+                print("MiniData=" +str(config.MiniData))
 
                 config.XOffset = struct.unpack('h', f.read(2)) [0]
                 #print("XOffset=" +str(config.XOffset))

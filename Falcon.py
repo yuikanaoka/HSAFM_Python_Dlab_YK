@@ -730,7 +730,7 @@ class MainWindow(QMainWindow):
 
     def makeDIcolor(self):
 
-        for i in range(0, 255):
+        for i in range(0, 256):
 
             if (i < 158):
                 config.DIcolor[i, 0, 2] = i / 157 * 255

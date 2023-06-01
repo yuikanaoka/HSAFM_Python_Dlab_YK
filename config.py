@@ -127,6 +127,7 @@ axes=None
 # pdb display
 pdbdata = None
 atomtype = "C"
+appearance = "Dot"
 pdbplot=None
 pdbplot_x=None
 pdbplot_y=None
@@ -134,7 +135,7 @@ pdbplot_z=None
 fig=None
 ax=None
 sc=None
-atomtype_color={"C":"red","N":"blue","O":"green","ALL":"black"}
+atomtype_color={"C":"red","N":"purple","O":"green","H":"blue","S":"black", "ALL":"black"}
 
 #tip parameter
 tipradius = 1.0

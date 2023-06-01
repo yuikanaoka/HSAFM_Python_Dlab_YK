@@ -252,9 +252,10 @@ class TipSampleDilationWindow(QMainWindow):
         self.sampleappearancetype_layout = QVBoxLayout()  # Create a new QVBoxLayout for the tip postion
         self.sampleappearancetype_label = QLabel("Appearance Type")
         self.sampleappearancetype = QComboBox()
-        self.sampleappearancetype.addItems(["Dot","Sphere","Ribbon","Line"])
+        self.sampleappearancetype.addItems(["Dot","Line"])
         self.sampleappearancetype_layout.addWidget(self.sampleappearancetype_label)
         self.sampleappearancetype_layout.addWidget(self.sampleappearancetype)
+        self.sampleappearancetype.currentIndexChanged.connect(self.appearance_change)  # Connect the valueChanged signal to update_label
 
 
         #add the layout to the sample appearance layout
@@ -712,12 +713,18 @@ class TipSampleDilationWindow(QMainWindow):
         #atom type judge and display pdb as 3d plot
         if config.atomtype=="ALL":
             print("all")
+            unique_atom_names = config.pdbdata['Atom Name'].unique()
+            cmap = plt.get_cmap('nipy_spectral')
+            atom_colors = cmap(np.linspace(0, 1, len(unique_atom_names)))
+            # Atom Name と色の対応関係を辞書に保存します。
+            colors_dic= dict(zip(unique_atom_names, atom_colors))
+            colors = config.pdbdata['Atom Name'].map(colors_dic).tolist()
             config.fig=plt.figure(num="PDB Viewer")
             config.ax = config.fig.add_subplot(111, projection='3d')
-            config.sc = config.ax.scatter(config.pdbdata['X'], config.pdbdata['Y'], config.pdbdata['Z'], s=10, marker='o', alpha=0.5)
+            config.sc = config.ax.scatter(config.pdbdata['X'], config.pdbdata['Y'], config.pdbdata['Z'], s=10, marker='o', alpha=0.5, c=config.atomtype_color)
             #config.sc._offsets3d = (config.pdbdata['X'], config.pdbdata['Y'], config.pdbdata['Z'])
-            config.sc.set_facecolor(config.atomtype_color[config.atomtype])
-            config.sc.set_edgecolor(config.atomtype_color[config.atomtype])
+            #config.sc.set_facecolor(config.atomtype_color[config.atomtype])
+            #config.sc.set_edgecolor(config.atomtype_color[config.atomtype])
             config.ax.set_xlim([config.pdbplot['X'].min(), config.pdbplot['X'].max()])
             config.ax.set_ylim([config.pdbplot['Y'].min(), config.pdbplot['Y'].max()])
             config.ax.set_zlim([config.pdbplot['Z'].min(), config.pdbplot['Z'].max()])
@@ -751,15 +758,82 @@ class TipSampleDilationWindow(QMainWindow):
     #=========================
     # atomtype chnaged display update
     #=========================
-    def display_atomtype_update(self):
+    def display_atomtype_appearance_update(self):
         print ("update")
+        config.ax.cla()  # 現在のグラフをクリア
+        
+        #config.fig=plt.figure(num="PDB Viewer")
+        #config.ax = config.fig.add_subplot(111, projection='3d')
         if config.atomtype=="ALL":
             print("all")
             config.pdbplot = config.pdbdata
             print (len(config.pdbplot))
-            config.sc._offsets3d = (config.pdbdata['X'], config.pdbdata['Y'], config.pdbdata['Z'])
-            config.sc.set_facecolor(config.atomtype_color[config.atomtype])
-            config.sc.set_edgecolor(config.atomtype_color[config.atomtype])
+            if config.appearance=="Dot":
+                unique_atom_names = config.pdbdata['Atom Name'].unique()
+                cmap = plt.get_cmap('nipy_spectral')
+                atom_colors = cmap(np.linspace(0, 1, len(unique_atom_names)))
+                # Atom Name と色の対応関係を辞書に保存します。
+                colors_dic= dict(zip(unique_atom_names, atom_colors))
+                colors = config.pdbplot['Atom Name'].map(colors_dic).tolist()
+                config.sc = config.ax.scatter(config.pdbplot['X'], config.pdbplot['Y'], config.pdbplot['Z'])
+                config.sc.set_facecolor(colors)  # 色のリストを適用
+                config.sc.set_edgecolor(colors)  # 色のリストを適用
+                config.ax.set_xlim([config.pdbplot['X'].min(), config.pdbplot['X'].max()])
+                config.ax.set_ylim([config.pdbplot['Y'].min(), config.pdbplot['Y'].max()])
+                config.ax.set_zlim([config.pdbplot['Z'].min(), config.pdbplot['Z'].max()])
+                config.ax.set_xlabel('X')
+                config.ax.set_ylabel('Y')
+                config.ax.set_zlabel('Z')
+                plt.draw()
+            elif config.appearance=="Line":
+                #config.sc._offsets3d = (config.pdbdata['X'], config.pdbdata['Y'], config.pdbdata['Z'])
+                #config.sc.set_facecolor(config.atomtype_color[config.atomtype])
+                #config.sc.set_edgecolor(config.atomtype_color[config.atomtype])
+                config.ax.plot3D(config.pdbplot['X'].to_numpy(), config.pdbplot['Y'].to_numpy(), config.pdbplot['Z'].to_numpy(), color='black')  # 折れ線グラフの描画
+                config.ax.set_xlim([config.pdbplot['X'].min(), config.pdbplot['X'].max()])
+                config.ax.set_ylim([config.pdbplot['Y'].min(), config.pdbplot['Y'].max()])
+                config.ax.set_zlim([config.pdbplot['Z'].min(), config.pdbplot['Z'].max()])
+                config.ax.set_xlabel('X')
+                config.ax.set_ylabel('Y')
+                config.ax.set_zlabel('Z')
+                plt.draw()
+        else:
+            print(config.atomtype)
+            config.pdbplot = config.pdbdata[config.pdbdata['Atom Name'] == config.atomtype]
+            #print(config.pdbplot)
+            print (len(config.pdbplot))
+            if config.appearance=="Dot":
+                config.sc = config.ax.scatter(config.pdbplot['X'], config.pdbplot['Y'], config.pdbplot['Z'])
+                config.sc.set_facecolor(config.atomtype_color[config.atomtype])
+                config.sc.set_edgecolor(config.atomtype_color[config.atomtype])
+                config.ax.set_xlim([config.pdbplot['X'].min(), config.pdbplot['X'].max()])
+                config.ax.set_ylim([config.pdbplot['Y'].min(), config.pdbplot['Y'].max()])
+                config.ax.set_zlim([config.pdbplot['Z'].min(), config.pdbplot['Z'].max()])
+                config.ax.set_xlabel('X')
+                config.ax.set_ylabel('Y')
+                config.ax.set_zlabel('Z')
+                plt.draw()
+            elif config.appearance=="Line":
+                config.ax.plot3D(config.pdbplot['X'].to_numpy(), config.pdbplot['Y'].to_numpy(), config.pdbplot['Z'].to_numpy(), color=config.atomtype_color[config.atomtype])  # 折れ線グラフの描画
+                config.ax.set_xlim([config.pdbplot['X'].min(), config.pdbplot['X'].max()])
+                config.ax.set_ylim([config.pdbplot['Y'].min(), config.pdbplot['Y'].max()])
+                config.ax.set_zlim([config.pdbplot['Z'].min(), config.pdbplot['Z'].max()])
+                config.ax.set_xlabel('X')
+                config.ax.set_ylabel('Y')
+                config.ax.set_zlabel('Z')
+                plt.draw()
+
+    
+
+    
+    #=========================
+    #pdb display update
+    #=========================
+    def display_update(self):
+        if config.appearance=="Dot":
+            config.sc._offsets3d = (config.pdbplot['X'], config.pdbplot['Y'], config.pdbplot['Z'])
+            #config.sc.set_facecolor(config.atomtype_color[config.atomtype])
+            #config.sc.set_edgecolor(config.atomtype_color[config.atomtype])
             config.ax.set_xlim([config.pdbplot['X'].min(), config.pdbplot['X'].max()])
             config.ax.set_ylim([config.pdbplot['Y'].min(), config.pdbplot['Y'].max()])
             config.ax.set_zlim([config.pdbplot['Z'].min(), config.pdbplot['Z'].max()])
@@ -767,14 +841,9 @@ class TipSampleDilationWindow(QMainWindow):
             config.ax.set_ylabel('Y')
             config.ax.set_zlabel('Z')
             plt.draw()
-        else:
-            print(config.atomtype)
-            config.pdbplot = config.pdbdata[config.pdbdata['Atom Name'] == config.atomtype]
-            #print(config.pdbplot)
-            print (len(config.pdbplot))
-            config.sc._offsets3d = (config.pdbplot['X'], config.pdbplot['Y'], config.pdbplot['Z'])
-            config.sc.set_facecolor(config.atomtype_color[config.atomtype])
-            config.sc.set_edgecolor(config.atomtype_color[config.atomtype])
+        elif config.appearance=="Line":
+            config.ax.cla() 
+            config.ax.plot3D(config.pdbplot['X'].to_numpy(), config.pdbplot['Y'].to_numpy(), config.pdbplot['Z'].to_numpy(), color=config.atomtype_color[config.atomtype])  # 折れ線グラフの描画
             config.ax.set_xlim([config.pdbplot['X'].min(), config.pdbplot['X'].max()])
             config.ax.set_ylim([config.pdbplot['Y'].min(), config.pdbplot['Y'].max()])
             config.ax.set_zlim([config.pdbplot['Z'].min(), config.pdbplot['Z'].max()])
@@ -783,23 +852,6 @@ class TipSampleDilationWindow(QMainWindow):
             config.ax.set_zlabel('Z')
             plt.draw()
 
-        
-       
-    
-    #=========================
-    #pdb display update
-    #=========================
-    def display_update(self):
-        config.sc._offsets3d = (config.pdbplot['X'], config.pdbplot['Y'], config.pdbplot['Z'])
-        config.sc.set_facecolor(config.atomtype_color[config.atomtype])
-        config.sc.set_edgecolor(config.atomtype_color[config.atomtype])
-        config.ax.set_xlim([config.pdbplot['X'].min(), config.pdbplot['X'].max()])
-        config.ax.set_ylim([config.pdbplot['Y'].min(), config.pdbplot['Y'].max()])
-        config.ax.set_zlim([config.pdbplot['Z'].min(), config.pdbplot['Z'].max()])
-        config.ax.set_xlabel('X')
-        config.ax.set_ylabel('Y')
-        config.ax.set_zlabel('Z')
-        plt.draw()
 
 
 
@@ -849,15 +901,8 @@ class TipSampleDilationWindow(QMainWindow):
         file_dialog.setDefaultSuffix('.png')
         if file_dialog.exec_() == QFileDialog.Accepted:
             selected_file = file_dialog.selectedFiles()[0]
-            img_array=(config.dilation/config.dilation.max())*255
-            img_array=img_array.astype(np.uint8)
-            cmap=self.makeDIcolor()
-            img_array=cmap(img_array)
-            image=Image.fromarray(img_array)
-            image.save(selected_file)
-
             
-            
+            plt.imsave(selected_file,config.savepng)
             print("PNG saved.")
 
         
@@ -867,10 +912,11 @@ class TipSampleDilationWindow(QMainWindow):
     # save as asd file
     #=========================
     def saveasdfunc(self):
+        
         file_dialog = QFileDialog()
         file_dialog.setAcceptMode(QFileDialog.AcceptSave)
         file_dialog.setDefaultSuffix('.asd')
-        
+
         if file_dialog.exec_() == QFileDialog.Accepted:
             save_file_path = file_dialog.selectedFiles()[0]
 
@@ -987,7 +1033,17 @@ class TipSampleDilationWindow(QMainWindow):
                     f.write(Comment.encode("utf-8"))
                     
                     f.seek(FileHeaderSizeForSave + (FrameHeaderSize + 2 * TXPixel * TYPixel) * index)
+                    print("save position")
                     print (FileHeaderSizeForSave + (FrameHeaderSize + 2 * TXPixel * TYPixel) * index)
+                    print ("fila header size")
+                    print (FileHeaderSizeForSave)
+                    print ("frame header size")
+                    print (FrameHeaderSize)
+                    print ("pixel size")
+                    print (2 * TXPixel * TYPixel)
+                    print ("index")
+                    print (index)
+
                     CurrentNum=0
                     Maxdata=round(np.max(config.dilation))
                     Minidata=round(np.min(config.dilation))
@@ -1005,12 +1061,21 @@ class TipSampleDilationWindow(QMainWindow):
                     f.write(struct.pack('i', Reserved))
 
 
-                    
-                    
+                    print ("file pixel")
+                    print (TYPixel)
+                    print (TXPixel)
+                    print (type(TYPixel))
+                    print (type(TXPixel))
+                    print("dilation value")
+                    print(config.dilation.max())
+                    print(config.dilation.min())
+                    #dilation wavegはsimulation結果と同じ行列の向きになっている
                     for Ynum in range(TYPixel):
                         for Xnum in range(TXPixel):
-                            data = ((5.0 - config.dilation[Ynum][Xnum] / PiezoConstZ / DriverGainZ) * 4096.0) / 10.0
-                            f.write(struct.pack('f', data))
+                            #data shoud be 16 bit integer
+                            data = (5.0 - (config.dilation[Ynum][Xnum] / PiezoConstZ / DriverGainZ)) * (4096.0/10.0)
+                            data=int(data)
+                            f.write(struct.pack("h", data))
                 f.close()
 
 
@@ -1021,7 +1086,16 @@ class TipSampleDilationWindow(QMainWindow):
         self.current_atom = self.sampleatom.itemText(index)
         config.atomtype = self.current_atom
         print(config.atomtype)
-        self.display_atomtype_update()
+        self.display_atomtype_appearance_update()
+    
+    #=========================
+    # detect apperaance chnage
+    #=========================
+    def appearance_change(self, index):
+        self.current_apperance = self.sampleappearancetype.itemText(index)
+        config.appearance = self.current_apperance
+        print(config.appearance)
+        self.display_atomtype_appearance_update()
 
     #=========================
     # detect tip radius chnage
@@ -1074,7 +1148,7 @@ class TipSampleDilationWindow(QMainWindow):
         cmap=self.makeDIcolor()
         #img_array=cv2.applyColorMap(img_array, config.DIcolor)
         #img_array=cv2.cvtColor(img_array, cv2.COLOR_BGR2RGB)
-        #config.savepng=cmap(img_array)
+        config.savepng=cmap(img_array)
         #plt.imsave('dilation.png',config.savepng)
         #config.imgfig=plt.figure(num="dilation img")
         #config.imgax=config.imgfig.add_subplot(111)
@@ -1297,7 +1371,8 @@ class TipSampleDilationWindow(QMainWindow):
         
        
         np.savetxt('dilation.csv', config.dilation, delimiter=',')
-        
+        print ("dilation max: "+str(config.dilation.max()))
+        print ("dilation min: "+str(config.dilation.min()))
 
         endtime = datetime.datetime.now()
         print ("End time: " + str(endtime))
@@ -1367,50 +1442,90 @@ class TipSampleDilationWindow(QMainWindow):
     # set top view xy view
     #=========================
     def settopview(self):
-        config.sc._offsets3d = (config.pdbplot['X'], config.pdbplot['Y'], config.pdbplot['Z'])
-        config.sc.set_facecolor(config.atomtype_color[config.atomtype])
-        config.sc.set_edgecolor(config.atomtype_color[config.atomtype])
-        config.ax.set_xlim([config.pdbplot['X'].min(), config.pdbplot['X'].max()])
-        config.ax.set_ylim([config.pdbplot['Y'].min(), config.pdbplot['Y'].max()])
-        config.ax.set_zlim([config.pdbplot['Z'].min(), config.pdbplot['Z'].max()])
-        config.ax.set_xlabel('X')
-        config.ax.set_ylabel('Y')
-        config.ax.set_zlabel('Z')
-        config.ax.view_init(elev=90, azim=0)  # XY平面から見た角度に設定
-        plt.draw()
+        if config.appearance=="Dot":
+            config.sc._offsets3d = (config.pdbplot['X'], config.pdbplot['Y'], config.pdbplot['Z'])
+            #config.sc.set_facecolor(config.atomtype_color[config.atomtype])
+            #config.sc.set_edgecolor(config.atomtype_color[config.atomtype])
+            config.ax.set_xlim([config.pdbplot['X'].min(), config.pdbplot['X'].max()])
+            config.ax.set_ylim([config.pdbplot['Y'].min(), config.pdbplot['Y'].max()])
+            config.ax.set_zlim([config.pdbplot['Z'].min(), config.pdbplot['Z'].max()])
+            config.ax.set_xlabel('X')
+            config.ax.set_ylabel('Y')
+            config.ax.set_zlabel('Z')
+            config.ax.view_init(elev=90, azim=0)  # XY平面から見た角度に設定
+            plt.draw()
+        elif config.appearance=="Line":
+            config.ax.cla() 
+            config.ax.plot3D(config.pdbplot['X'].to_numpy(), config.pdbplot['Y'].to_numpy(), config.pdbplot['Z'].to_numpy(), color=config.atomtype_color[config.atomtype])  # 折れ線グラフの描画
+            config.ax.set_xlim([config.pdbplot['X'].min(), config.pdbplot['X'].max()])
+            config.ax.set_ylim([config.pdbplot['Y'].min(), config.pdbplot['Y'].max()])
+            config.ax.set_zlim([config.pdbplot['Z'].min(), config.pdbplot['Z'].max()])
+            config.ax.set_xlabel('X')
+            config.ax.set_ylabel('Y')
+            config.ax.set_zlabel('Z')
+            config.ax.view_init(elev=90, azim=0)  # XY平面から見た角度に設定
+            plt.draw()
+        
+    
+       
     
     #=========================
     # set side view xz view
     #=========================
     def setxzview(self):
-        config.sc._offsets3d = (config.pdbplot['X'], config.pdbplot['Y'], config.pdbplot['Z'])
-        config.sc.set_facecolor(config.atomtype_color[config.atomtype])
-        config.sc.set_edgecolor(config.atomtype_color[config.atomtype])
-        config.ax.set_xlim([config.pdbplot['X'].min(), config.pdbplot['X'].max()])
-        config.ax.set_ylim([config.pdbplot['Y'].min(), config.pdbplot['Y'].max()])
-        config.ax.set_zlim([config.pdbplot['Z'].min(), config.pdbplot['Z'].max()])
-        config.ax.set_xlabel('X')
-        config.ax.set_ylabel('Y')
-        config.ax.set_zlabel('Z')
-        config.ax.view_init(elev=0, azim=0)
-        plt.draw()
+        if config.appearance=="Dot":
+            config.sc._offsets3d = (config.pdbplot['X'], config.pdbplot['Y'], config.pdbplot['Z'])
+            #config.sc.set_facecolor(config.atomtype_color[config.atomtype])
+            #config.sc.set_edgecolor(config.atomtype_color[config.atomtype])
+            config.ax.set_xlim([config.pdbplot['X'].min(), config.pdbplot['X'].max()])
+            config.ax.set_ylim([config.pdbplot['Y'].min(), config.pdbplot['Y'].max()])
+            config.ax.set_zlim([config.pdbplot['Z'].min(), config.pdbplot['Z'].max()])
+            config.ax.set_xlabel('X')
+            config.ax.set_ylabel('Y')
+            config.ax.set_zlabel('Z')
+            config.ax.view_init(elev=0, azim=0)
+            plt.draw()
+        elif config.appearance=="Line":
+            config.ax.cla() 
+            config.ax.plot3D(config.pdbplot['X'].to_numpy(), config.pdbplot['Y'].to_numpy(), config.pdbplot['Z'].to_numpy(), color=config.atomtype_color[config.atomtype])  # 折れ線グラフの描画
+            config.ax.set_xlim([config.pdbplot['X'].min(), config.pdbplot['X'].max()])
+            config.ax.set_ylim([config.pdbplot['Y'].min(), config.pdbplot['Y'].max()])
+            config.ax.set_zlim([config.pdbplot['Z'].min(), config.pdbplot['Z'].max()])
+            config.ax.set_xlabel('X')
+            config.ax.set_ylabel('Y')
+            config.ax.set_zlabel('Z')
+            config.ax.view_init(elev=0, azim=0)
+            plt.draw()
+
     
     #=========================
     # set side view yz view
     #=========================
     def setyzview(self):
-        config.sc._offsets3d = (config.pdbplot['X'], config.pdbplot['Y'], config.pdbplot['Z'])
-        config.sc.set_facecolor(config.atomtype_color[config.atomtype])
-        config.sc.set_edgecolor(config.atomtype_color[config.atomtype])
-        config.ax.set_xlim([config.pdbplot['X'].min(), config.pdbplot['X'].max()])
-        config.ax.set_ylim([config.pdbplot['Y'].min(), config.pdbplot['Y'].max()])
-        config.ax.set_zlim([config.pdbplot['Z'].min(), config.pdbplot['Z'].max()])
-        config.ax.set_xlabel('X')
-        config.ax.set_ylabel('Y')
-        config.ax.set_zlabel('Z')
-        config.ax.view_init(elev=0, azim=90)
-        plt.draw()
-    
+        if config.appearance=="Dot":
+            config.sc._offsets3d = (config.pdbplot['X'], config.pdbplot['Y'], config.pdbplot['Z'])
+            #config.sc.set_facecolor(config.atomtype_color[config.atomtype])
+            #config.sc.set_edgecolor(config.atomtype_color[config.atomtype])
+            config.ax.set_xlim([config.pdbplot['X'].min(), config.pdbplot['X'].max()])
+            config.ax.set_ylim([config.pdbplot['Y'].min(), config.pdbplot['Y'].max()])
+            config.ax.set_zlim([config.pdbplot['Z'].min(), config.pdbplot['Z'].max()])
+            config.ax.set_xlabel('X')
+            config.ax.set_ylabel('Y')
+            config.ax.set_zlabel('Z')
+            config.ax.view_init(elev=0, azim=90)
+            plt.draw()
+        elif config.appearance=="Line":
+            config.ax.cla() 
+            config.ax.plot3D(config.pdbplot['X'].to_numpy(), config.pdbplot['Y'].to_numpy(), config.pdbplot['Z'].to_numpy(), color=config.atomtype_color[config.atomtype])  # 折れ線グラフの描画
+            config.ax.set_xlim([config.pdbplot['X'].min(), config.pdbplot['X'].max()])
+            config.ax.set_ylim([config.pdbplot['Y'].min(), config.pdbplot['Y'].max()])
+            config.ax.set_zlim([config.pdbplot['Z'].min(), config.pdbplot['Z'].max()])
+            config.ax.set_xlabel('X')
+            config.ax.set_ylabel('Y')
+            config.ax.set_zlabel('Z')
+            config.ax.view_init(elev=0, azim=90)
+            plt.draw()
+        
 
 
 
