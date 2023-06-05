@@ -1070,7 +1070,7 @@ class TipSampleDilationWindow(QMainWindow):
                     print(config.dilation.max())
                     print(config.dilation.min())
                     #dilation wavegはsimulation結果と同じ行列の向きになっている
-                    for Ynum in range(TYPixel):
+                    for Ynum in range(TYPixel-1, -1, -1):
                         for Xnum in range(TXPixel):
                             #data shoud be 16 bit integer
                             data = (5.0 - (config.dilation[Ynum][Xnum] / PiezoConstZ / DriverGainZ)) * (4096.0/10.0)

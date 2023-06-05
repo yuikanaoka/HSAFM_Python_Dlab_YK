@@ -91,7 +91,8 @@ class LineProfile:
 
     def __init__(self):
        
-       
+        print ("config.dspimg.shape[0] is :"+str(config.dspimg.shape[0]))
+        print ("config.dspimg.shape[1] is :"+str(config.dspimg.shape[1]))
         self.sx=0
         self.sy=int(config.dspimg.shape[0] / 2)
         self.ex=int(config.dspimg.shape[1])
@@ -145,7 +146,7 @@ class LineProfile:
    # 4. fetch the z-data from given pixel index
    # 5. put the z-data into plot
     def DrawLine(self,event, x, y, flags, param):
-      
+       
         if config.lineopen==True and config.lineclose==False:
             
             if event == cv2.EVENT_LBUTTONDOWN:  #左クリック押下時
@@ -204,23 +205,28 @@ class LineProfile:
                 else:
                     self.status = self.status or 0x01 
                     imageH = self.zarray.shape[0]
+                    print ("imageH: ",imageH)
                     imageW = self.zarray.shape[1]
+                    print ("imageW: ",imageW)
                     print("drawline "+str(self.index))
                     self.s0 = True
                     self.s5 = True
                     self.s4 = False
                     self.sx = x      #始点x
+                    print("sx: ",self.sx)
                     self.sy = y      #始点y
+                    print("sy: ",self.sy)
                     self.index_list.start_point = Node([x,y])
                     self.index_list.print_index()
                     self.height_startpoint=self.zarray[self.sy,self.sx]
 
                 print("Left-clicked. Start point:(%d, %d)" %(self.sx, self.sy))
                 #temp_function(self.sx,self.sy)
+                self.sxori=int((self.sx*self.zarray.shape[1])/config.dspimg.shape[1])
+                self.syori=int((self.sy*self.zarray.shape[0])/config.dspimg.shape[0])
                 
-                
-                self.sxnm=(self.sx/self.zarray.shape[1])*self.xscansize
-                self.synm=(self.sy/self.zarray.shape[0])*self.yscansize
+                self.sxnm=(self.sxori/self.zarray.shape[1])*self.xscansize
+                self.synm=(self.syori/self.zarray.shape[0])*self.yscansize
                
                     
             elif event == cv2.EVENT_MOUSEMOVE and self.s0 and (not self.s1):  #左クリックでドラッグ中
@@ -253,55 +259,72 @@ class LineProfile:
                 dXa = np.abs(dX)
                 dYa = np.abs(dY)
 
+                dXa=int((dX*self.zarray.shape[0])/config.dspimg.shape[0])
+                dYa=int((dY*self.zarray.shape[1])/config.dspimg.shape[1])
+
+                self.exori=int((self.ex*self.zarray.shape[1])/config.dspimg.shape[1])
+                self.eyori=int((self.ey*self.zarray.shape[0])/config.dspimg.shape[0])
+                self.sxori=int((self.sx*self.zarray.shape[1])/config.dspimg.shape[1])
+                self.syori=int((self.sy*self.zarray.shape[0])/config.dspimg.shape[0])
+
+
+
                
                 # distancelist[x_px_index, y_px_index, z_value]
-                distancelist = np.empty(shape=(np.maximum(dYa, dXa),3),dtype=np.float32)
-                distancelist.fill(np.nan)
+                distancelist = np.zeros(shape=(np.maximum(dYa, dXa),3),dtype=np.float32)
+                
+                #distancelist.fill(np.nan)
+                #print ("distancelist: ", distancelist)
 
-                negativeY = self.sy > self.ey
-                negativeX = self.sx > self.ex
+                negativeY = self.syori > self.eyori
+                negativeX = self.sxori > self.exori
 
-                if self.sx == self.ex and self.sy != self.ey: # vertical line
-                    distancelist[:,0] = self.sx
+                if self.sxori == self.exori and self.syori != self.eyori: # vertical line
+                    distancelist[:,0] = self.sxori
                     if negativeY:
-                        distancelist[:,1] = np.arange(self.sy-1, self.sy-dYa-1, -1)
+                        distancelist[:,1] = np.arange(self.syori-1, self.syori-dYa-1, -1)
                     else:
-                        distancelist[:,1] = np.arange(self.sy+1, self.sy+dYa+1)
-                elif self.sy == self.ey and self.sx != self.ex: # horizontal line
-                    distancelist[:,1] = self.sy
+                        distancelist[:,1] = np.arange(self.syori+1, self.syori+dYa+1)
+                elif self.syori == self.eyori and self.sxori != self.exori: # horizontal line
+                    distancelist[:,1] = self.syori
                     if negativeX:
-                        distancelist[:,0] = np.arange(self.sx-1, self.sx-dXa-1, -1)
+                        distancelist[:,0] = np.arange(self.sxori-1, self.sxori-dXa-1, -1)
                     else:
-                        distancelist[:,0] = np.arange(self.sx+1, self.sx+dXa+1)
-                elif self.sx == self.ex and self.sy == self.ey:
+                        distancelist[:,0] = np.arange(self.sxori+1, self.sxori+dXa+1)
+                elif self.sxori == self.exori and self.syori == self.eyori:
                     pass
                 else:
                     steepSlope = dYa > dXa
                     if steepSlope:
                         slope_f32 = np.float32(dX)/np.float32(dY)
                         if negativeY:
-                            distancelist[:,1] = np.arange(self.sy-1, self.sy-dYa-1, -1)
+                            distancelist[:,1] = np.arange(self.syori-1, self.syori-dYa-1, -1)
                         else:
-                            distancelist[:,1] = np.arange(self.sy+1, self.sy+dYa+1)
-                        distancelist[:,0] = (slope_f32*(distancelist[:,1]-self.sy)).astype(int)+self.sx
+                            distancelist[:,1] = np.arange(self.syori+1, self.syori+dYa+1)
+                        distancelist[:,0] = (slope_f32*(distancelist[:,1]-self.syori)).astype(int)+self.sxori
                     
                     else:
                         slope_f32 = np.float32(dY)/np.float32(dX)
                         if negativeX:
-                            distancelist[:,0] = np.arange(self.sx-1, self.sx-dXa-1, -1)
+                            distancelist[:,0] = np.arange(self.sxori-1, self.sxori-dXa-1, -1)
                         else:
-                            distancelist[:,0] = np.arange(self.sx+1, self.sx+dXa+1)
-                        distancelist[:,1] = (slope_f32*(distancelist[:,0]-self.sx)).astype(int)+self.sy
+                            distancelist[:,0] = np.arange(self.sxori+1, self.sxori+dXa+1)
+                        distancelist[:,1] = (slope_f32*(distancelist[:,0]-self.sxori)).astype(int)+self.syori
+                        #print ("distancelist: ", distancelist)
 
-                    colX = distancelist[:,0]
-                    colY = distancelist[:,1]
-                    distancelist = distancelist[(colX >=0) & (colY >= 0) & (colX < self.zarray.shape[1]) & (colY < self.zarray.shape[0])]
-                    distancelist[:,2] = self.zarray[config.dspsize[1]-distancelist[:,1].astype(np.uint),distancelist[:,0].astype(np.uint)]
-                    distancelist[:,2] = distancelist[:,2]-distancelist[:,2].min()
-                    self.LineList=np.array(distancelist[:,0:2])
-                    step=self.distance/len(distancelist[:,2])
-                    distance_ticks= np.arange(len(distancelist[:,2]))*step
-                    self.UpdatePlot(config.linewindow,config.figure,config.axes,distance_ticks, distancelist)
+                colX = distancelist[:,0]
+                colY = distancelist[:,1]
+                distancelist = distancelist[(colX >=0) & (colY >= 0) & (colX < self.zarray.shape[1]) & (colY < self.zarray.shape[0])]
+                #print ("distancelist: ", distancelist)
+                distancelist[:,2] = self.zarray[distancelist[:,0].astype(np.uint),distancelist[:,1].astype(np.uint)]
+                print ("distancelist: ", distancelist)
+                print ("distancelist.shape: ", distancelist.shape)
+                print(self.zarray.max())
+                distancelist[:,2] = distancelist[:,2]-distancelist[:,2].min()
+                self.LineList=np.array(distancelist[:,0:2])
+                step=self.distance/len(distancelist[:,2])
+                distance_ticks= np.arange(len(distancelist[:,2]))*step
+                self.UpdatePlot(config.linewindow,config.figure,config.axes,distance_ticks, distancelist)
 
                 self.s2 = True
                         
@@ -338,9 +361,9 @@ class LineProfile:
     
     def MakeProfileWindow(self):
         plt.ion()
-        self.figure,self.axes= plt.subplots(figsize=(8,6))
+        self.figure,self.axes= plt.subplots(figsize=(8,4))
         self.fnum=plt.figure(1)
-        self.figure.canvas.setWindowTitle("Line Profile")
+        #self.figure.canvas.set_title("Line Profile")
         Multi_chk_pos = plt.axes([.12, .85, .1, .15]) # (x1,y1,x2,y2): make checkbox at (x1,y1) with a size of (x2,y2)
         Multi_chk_pos.set_axis_off() # turn off the surrounding line of checkbox
         Cursor_chk_pos = plt.axes([.25, .85, .10, .15])
@@ -367,9 +390,12 @@ class LineProfile:
     # Calculate_Distance function calculates the distance between start point and end point, unit in nm
     # The calculated distance, self.distance is for make linespan of lineprofile plot
     def Calculate_Distance(self):
-        self.height_endpoint=self.zarray[self.ey,self.ex]               
-        self.exnm=(self.ex/self.zarray.shape[1])*self.xscansize
-        self.eynm=(self.ey/self.zarray.shape[0])*self.yscansize
+        print("self.zarray.shape: ", self.zarray.shape[0], self.zarray.shape[1])
+        self.exori=int((self.ex*self.zarray.shape[1])/config.dspimg.shape[1])
+        self.eyori=int((self.ey*self.zarray.shape[0])/config.dspimg.shape[0])
+        self.height_endpoint=self.zarray[self.eyori,self.exori]               
+        self.exnm=(self.exori/self.zarray.shape[1])*self.xscansize
+        self.eynm=(self.eyori/self.zarray.shape[0])*self.yscansize
         self.distance=int(np.sqrt((self.exnm - self.sxnm) ** 2 + (self.eynm - self.synm) ** 2))
     
     def pnt_line_dist(self,pts):

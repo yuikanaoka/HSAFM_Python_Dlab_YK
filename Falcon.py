@@ -40,6 +40,7 @@ from imagefifo import FileImport
 
 import config
 import lineprofile as lp
+import lineprofile_chan as lpc
 import removebackground as rb
 import noisefilter as nf
 import tipsampledilation as tsd
@@ -408,12 +409,14 @@ class MainWindow(QMainWindow):
                                                    'open folder',
                                                   config.data_folder , #os.path.expanduser('.'),
                                                    QFileDialog.ShowDirsOnly)
-
+        print(dirname)
         if dirname:
             self.dirname = dirname.replace('/', os.sep)  # ディレクトリの区切りをOSに合わせて変換しておく
             self.txtFolder.setText(self.dirname)
             # self.btnExec.setEnabled(True)
             self.step = 0
+        print(self.dirname)
+       
 
         self.file_open()
 
@@ -492,6 +495,9 @@ class MainWindow(QMainWindow):
 
     # else:
     def showFiles(self, files):
+        self.filesTable.clearContents()  # テーブルの内容をクリア
+        self.filesTable.setRowCount(0)  # 行数をクリア
+
         onlyfn = []
         for fn in files:
             # print(absolutePath(fn))
