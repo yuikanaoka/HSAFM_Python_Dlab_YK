@@ -34,6 +34,7 @@ import cv2
 import matplotlib.pyplot as plt
 import sys
 import math
+from scipy.interpolate import interp2d
 
 #plt.ion()
 class LineWindow(QMainWindow):
@@ -262,68 +263,145 @@ class LineProfile:
                 dXa=int((dX*self.zarray.shape[0])/config.dspimg.shape[0])
                 dYa=int((dY*self.zarray.shape[1])/config.dspimg.shape[1])
 
+                dislistlen=int(np.sqrt(dXa**2+dYa**2))
+                print("dislistlen: ", dislistlen)
+                #dislistlen2=int(np.sqrt(((dX*self.zarray.shape[0])/config.dspimg.shape[0]))**2+((dY*self.zarray.shape[1])/config.dspimg.shape[1])**2)
+                #print("dislistlen2: ", dislistlen2)
+
                 self.exori=int((self.ex*self.zarray.shape[1])/config.dspimg.shape[1])
                 self.eyori=int((self.ey*self.zarray.shape[0])/config.dspimg.shape[0])
                 self.sxori=int((self.sx*self.zarray.shape[1])/config.dspimg.shape[1])
                 self.syori=int((self.sy*self.zarray.shape[0])/config.dspimg.shape[0])
 
+                x_points=np.linspace(self.sxori,self.exori,dislistlen)
+                y_points=np.linspace(self.syori,self.eyori,dislistlen)
+                print("x_points_len: ", len(x_points))
+                print("y_points_len: ", len(y_points))
+
+
 
 
                
                 # distancelist[x_px_index, y_px_index, z_value]
-                distancelist = np.zeros(shape=(np.maximum(dYa, dXa),3),dtype=np.float32)
+                distancelist = np.zeros((dislistlen, 3), dtype=np.float32)
                 
                 #distancelist.fill(np.nan)
-                #print ("distancelist: ", distancelist)
+                #print ("distancelistshapw: ", distancelist.shape)
 
+                # negativeY = self.syori > self.eyori
+                # negativeX = self.sxori > self.exori
+
+                # if self.sxori == self.exori and self.syori != self.eyori: # vertical line
+                #     distancelist[:,0] = self.sxori
+                #     if negativeY:
+                #         distancelist[:,1] = np.arange(self.syori-1, self.syori-dYa-1, -1)
+                #     else:
+                #         distancelist[:,1] = np.arange(self.syori+1, self.syori+dYa+1)
+                # elif self.syori == self.eyori and self.sxori != self.exori: # horizontal line
+                #     distancelist[:,1] = self.syori
+                #     if negativeX:
+                #         distancelist[:,0] = np.arange(self.sxori-1, self.sxori-dXa-1, -1)
+                #     else:
+                #         distancelist[:,0] = np.arange(self.sxori+1, self.sxori+dXa+1)
+                # elif self.sxori == self.exori and self.syori == self.eyori:
+                #     pass
+                # else:
+                #     steepSlope = dYa > dXa
+                #     if steepSlope:
+                #         slope_f32 = np.float32(dX)/np.float32(dY)
+                #         if negativeY:
+                #             distancelist[:,1] = np.arange(self.syori-1, self.syori-dYa-1, -1)
+                #         else:
+                #             distancelist[:,1] = np.arange(self.syori+1, self.syori+dYa+1)
+                #         distancelist[:,0] = (slope_f32*(distancelist[:,1]-self.syori)).astype(int)+self.sxori
+                    
+                #     else:
+                #         slope_f32 = np.float32(dY)/np.float32(dX)
+                #         if negativeX:
+                #             distancelist[:,0] = np.arange(self.sxori-1, self.sxori-dXa-1, -1)
+                #         else:
+                #             distancelist[:,0] = np.arange(self.sxori+1, self.sxori+dXa+1)
+                #         distancelist[:,1] = (slope_f32*(distancelist[:,0]-self.sxori)).astype(int)+self.syori
+                #         #print ("distancelist: ", distancelist)
+
+                # colX = distancelist[:,0]
+                # colY = distancelist[:,1]
+                # distancelist = distancelist[(colX >=0) & (colY >= 0) & (colX < self.zarray.shape[1]) & (colY < self.zarray.shape[0])]
+                # #print ("distancelist: ", distancelist)
+                # distancelist[:,2] = self.zarray[distancelist[:,0].astype(np.uint),distancelist[:,1].astype(np.uint)]
+                # print ("distancelist: ", distancelist)
+                H, W = self.zarray.shape
+
+                # Generate the grid for the original image
+                x = np.linspace(0, W - 1, W)
+                y = np.linspace(0, H - 1, H)
+
+                # Create interpolation function
+                f = interp2d(x, y, self.zarray, kind='cubic')
+
+                # Variables for x and y coordinates
                 negativeY = self.syori > self.eyori
                 negativeX = self.sxori > self.exori
 
+                # Fill distancelist based on conditions
                 if self.sxori == self.exori and self.syori != self.eyori: # vertical line
                     distancelist[:,0] = self.sxori
                     if negativeY:
-                        distancelist[:,1] = np.arange(self.syori-1, self.syori-dYa-1, -1)
+                        distancelist[:,1] = np.linspace(self.syori-1, self.syori-dYa-1, dislistlen)
                     else:
-                        distancelist[:,1] = np.arange(self.syori+1, self.syori+dYa+1)
+                        distancelist[:,1] = np.linspace(self.syori+1, self.syori+dYa+1, dislistlen)
                 elif self.syori == self.eyori and self.sxori != self.exori: # horizontal line
                     distancelist[:,1] = self.syori
                     if negativeX:
-                        distancelist[:,0] = np.arange(self.sxori-1, self.sxori-dXa-1, -1)
+                        distancelist[:,0] = np.linspace(self.sxori-1, self.sxori-dXa-1, dislistlen)
                     else:
-                        distancelist[:,0] = np.arange(self.sxori+1, self.sxori+dXa+1)
-                elif self.sxori == self.exori and self.syori == self.eyori:
+                        distancelist[:,0] = np.linspace(self.sxori+1, self.sxori+dXa+1, dislistlen)
+                elif self.sxori == self.exori and self.syori == self.eyori: # single point
                     pass
-                else:
+                else: # arbitrary line
                     steepSlope = dYa > dXa
                     if steepSlope:
                         slope_f32 = np.float32(dX)/np.float32(dY)
                         if negativeY:
-                            distancelist[:,1] = np.arange(self.syori-1, self.syori-dYa-1, -1)
+                            distancelist[:,1] = np.linspace(self.syori-1, self.syori-dYa-1, dislistlen)
                         else:
-                            distancelist[:,1] = np.arange(self.syori+1, self.syori+dYa+1)
+                            distancelist[:,1] = np.linspace(self.syori+1, self.syori+dYa+1, dislistlen)
                         distancelist[:,0] = (slope_f32*(distancelist[:,1]-self.syori)).astype(int)+self.sxori
-                    
                     else:
                         slope_f32 = np.float32(dY)/np.float32(dX)
                         if negativeX:
-                            distancelist[:,0] = np.arange(self.sxori-1, self.sxori-dXa-1, -1)
+                            distancelist[:,0] = np.linspace(self.sxori-1, self.sxori-dXa-1, dislistlen)
                         else:
-                            distancelist[:,0] = np.arange(self.sxori+1, self.sxori+dXa+1)
+                            distancelist[:,0] = np.linspace(self.sxori+1, self.sxori+dXa+1, dislistlen)
                         distancelist[:,1] = (slope_f32*(distancelist[:,0]-self.sxori)).astype(int)+self.syori
-                        #print ("distancelist: ", distancelist)
 
                 colX = distancelist[:,0]
                 colY = distancelist[:,1]
+
+                # Make sure that the coordinates are within the valid range
                 distancelist = distancelist[(colX >=0) & (colY >= 0) & (colX < self.zarray.shape[1]) & (colY < self.zarray.shape[0])]
-                #print ("distancelist: ", distancelist)
-                distancelist[:,2] = self.zarray[distancelist[:,0].astype(np.uint),distancelist[:,1].astype(np.uint)]
-                print ("distancelist: ", distancelist)
-                print ("distancelist.shape: ", distancelist.shape)
-                print(self.zarray.max())
-                distancelist[:,2] = distancelist[:,2]-distancelist[:,2].min()
-                self.LineList=np.array(distancelist[:,0:2])
+
+                # Compute interpolated z values
+                z_values = np.array([f(x, y)[0] for x, y in zip(distancelist[:,0], distancelist[:,1])])
+                dx = np.gradient(distancelist[:,0])
+                dy = np.gradient(distancelist[:,1])
+                normals = np.stack((-dy, dx), axis=1)
+                normals /= np.linalg.norm(normals, axis=1)[:, np.newaxis]  # Normalize the normals
                 step=self.distance/len(distancelist[:,2])
                 distance_ticks= np.arange(len(distancelist[:,2]))*step
+                print ("distance_ticks: ", distance_ticks)
+                # Calculate the average Z value along the normal direction
+                profile_values = np.array([np.mean(f(x + d * normal[0], y + d * normal[1])) for (x, y, _), d, normal in zip(distancelist, distance_ticks, normals)])
+
+                distancelist[:,2] = profile_values
+                print(self.zarray.max())
+                distancelist[:,2] = distancelist[:,2]-distancelist[:,2].min()
+                print ("distancelist.shape: ", distancelist.shape)
+                print ("distancelist: ", distancelist)
+                print ("distancelist[:,2]min: ", distancelist[:,2].min())
+                self.LineList=np.array(distancelist[:,0:2])
+                
+                #distance_ticks= np.arange(len(distancelist[:,2]))*step
                 self.UpdatePlot(config.linewindow,config.figure,config.axes,distance_ticks, distancelist)
 
                 self.s2 = True
