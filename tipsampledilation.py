@@ -57,7 +57,7 @@ import noisefilter as nf
 import dilationfunctionmodule
 from concurrent.futures import ThreadPoolExecutor
 
-import freesasa
+import itertools
 
 class TipSampleDilationWindow(QMainWindow):
 
@@ -806,8 +806,11 @@ class TipSampleDilationWindow(QMainWindow):
         elif config.atomtype=="Extract":
             print("extract was selected")
             
+            print(config.pdbdata)
             
-            
+            extractstart=datetime.datetime.now()
+            print ("extract start time: "+str(extractstart))
+
             coordinates = config.pdbdata[['X', 'Y', 'Z']].to_numpy()
             print(coordinates)
             print(coordinates.shape)
@@ -840,53 +843,101 @@ class TipSampleDilationWindow(QMainWindow):
 
             #print(indices[:, 0])
             voxels[indices[:, 0], indices[:, 1], indices[:, 2]] = True
-            
+            in_voxel_coordinates = np.array([coordinates[i] for i in range(len(coordinates)) if voxels[tuple(indices[i])]])
+            in_voxel_indices = np.array([indices[i] for i in range(len(indices)) if voxels[tuple(indices[i])]])
+            coordinates_voxelindex_data = np.hstack((in_voxel_coordinates, in_voxel_indices))
 
+            # DataFrameを作成
+            config.coordinates_voxelindex = pd.DataFrame(coordinates_voxelindex_data , columns=['X', 'Y', 'Z', 'index_x', 'index_y', 'index_z'])
+            print(config.coordinates_voxelindex) 
+            #coordinates_voxelindex_z= config.coordinates_voxelindex.sort_values('index_z', inplace=True)
 
-            #print(voxels)
-            #print(voxels.shape)
-
-            # voxel内にある座標を取得
-            in_voxel_coordinates = coordinates[indices[:,0], indices[:,1], indices[:,2]]
-            print("in_voxel_coordinates")
-            print(in_voxel_coordinates.shape)
-            min_values_0 = in_voxel_coordinates[:,0].min()
-            min_values_1 = in_voxel_coordinates[:,1].min()
-            min_values_2 = in_voxel_coordinates[:,2].min()
-            min_values = np.array([min_values_0,min_values_1,min_values_2])
-            print("min_values")
-            print(min_values)
-            print(min_values.shape)
-            
-           
-
-
-            fig = plt.figure()
-
-            # voxelを描画するAxes
-            ax_voxel = fig.add_subplot(121, projection='3d')
-            ax_voxel.voxels(voxels)
-            ax_voxel.set_xlabel('X')
-            ax_voxel.set_ylabel('Y')
-            ax_voxel.set_zlabel('Z')
-
-            # 座標をプロットするAxes
-            ax_coordinates = fig.add_subplot(122, projection='3d')
-            ax_coordinates.scatter(in_voxel_coordinates[:, 0], in_voxel_coordinates[:, 1], in_voxel_coordinates[:, 2])
-            ax_coordinates.set_xlim(0, 23)
-            ax_coordinates.set_ylim(0,24)
-            ax_coordinates.set_zlim(0,15)
-
-            ax_coordinates.set_xlabel('X')
-            ax_coordinates.set_ylabel('Y')
-            ax_coordinates.set_zlabel('Z')
-
-            plt.show()
-
-
+            # 接触判定用の新たな列を追加
+            config.coordinates_voxelindex['enclosed'] = False
+            atom_types = config.pdbdata['Atom Name']
             
 
             
+
+            # 各ボクセルについて
+            for index, row in config.coordinates_voxelindex.iterrows():
+                x, y, z = row['index_x'], row['index_y'], row['index_z']
+                
+                 # 周囲のボクセルのインデックスを計算
+                surrounding = [(x+dx, y+dy, z+dz) for dx, dy, dz in itertools.product([-1, 0, 1], repeat=3) 
+                            if abs(dx) + abs(dy) + abs(dz) == 1]  # (-1, 0, 1)の各組み合わせで、各座標の差の絶対値の和が1（つまり、1つだけ異なる）となるもの
+                
+                # 周囲の全てのボクセルが存在するかどうかを調べる
+                enclosed = True
+                for i, j, k in surrounding:
+                    i, j, k = int(i), int(j), int(k)  # Ensure i, j, k are integers
+                    if 0 <= i < voxels.shape[0] and 0 <= j < voxels.shape[1] and 0 <= k < voxels.shape[2]:  # voxelsの範囲内にあるかどうかをチェック
+                        if not voxels[i, j, k]:
+                            enclosed = False
+                            break  # 一つでも接していないボクセルが見つかったら、その他は調べずにループから抜ける
+                config.coordinates_voxelindex.loc[index, 'enclosed'] = enclosed
+                config.coordinates_voxelindex.loc[index, 'Atom Name'] = atom_types[index]
+
+            # 'enclosed'カラムの値がTrueの行を削除
+            config.coordinates_voxelindex = config.coordinates_voxelindex[~config.coordinates_voxelindex['enclosed']]
+            atom_colors=config.coordinates_voxelindex['Atom Name']
+
+            extractend=datetime.datetime.now()
+            print ("extract edn time: "+str(extractend))
+            print ("extract time: "+str(extractend-extractstart))
+
+
+            atom_types_numeric, _ = pd.factorize(atom_colors)
+            print(config.coordinates_voxelindex)
+            print(len(config.coordinates_voxelindex))
+
+
+            # fig = plt.figure()
+
+            # # voxelを描画するAxes
+            # ax_voxel = fig.add_subplot(121, projection='3d')
+            # ax_voxel.voxels(voxels)
+            # ax_voxel.set_xlabel('X')
+            # ax_voxel.set_ylabel('Y')
+            # ax_voxel.set_zlabel('Z')
+
+            # # 座標をプロットするAxes
+            # ax_coordinates = fig.add_subplot(122, projection='3d')
+            # ax_coordinates.scatter(config.coordinates_voxelindex["X"], config.coordinates_voxelindex["Y"], config.coordinates_voxelindex["Z"], c=atom_types_numeric)
+            # # ax_coordinates.set_xlim(0, 23)
+            # # ax_coordinates.set_ylim(0,24)
+            # # ax_coordinates.set_zlim(0,15)
+
+            # ax_coordinates.set_xlabel('X')
+            # ax_coordinates.set_ylabel('Y')
+            # ax_coordinates.set_zlabel('Z')
+
+            # plt.show()
+
+            config.pdbplot = config.coordinates_voxelindex
+            #print(config.pdbplot)
+            print (len(config.pdbplot))
+            if config.appearance=="Dot":
+                config.sc = config.ax.scatter(config.pdbplot['X'], config.pdbplot['Y'], config.pdbplot['Z'],c=atom_types_numeric)
+                #config.sc.set_facecolor(config.atomtype_color[config.atomtype])
+                #config.sc.set_edgecolor(config.atomtype_color[config.atomtype])
+                config.ax.set_xlim([config.pdbplot['X'].min(), config.pdbplot['X'].max()])
+                config.ax.set_ylim([config.pdbplot['Y'].min(), config.pdbplot['Y'].max()])
+                config.ax.set_zlim([config.pdbplot['Z'].min(), config.pdbplot['Z'].max()])
+                config.ax.set_xlabel('X')
+                config.ax.set_ylabel('Y')
+                config.ax.set_zlabel('Z')
+                plt.draw()
+            elif config.appearance=="Line":
+                config.ax.plot3D(config.pdbplot['X'].to_numpy(), config.pdbplot['Y'].to_numpy(), config.pdbplot['Z'].to_numpy(), color=atom_types_numeric)  # 折れ線グラフの描画
+                config.ax.set_xlim([config.pdbplot['X'].min(), config.pdbplot['X'].max()])
+                config.ax.set_ylim([config.pdbplot['Y'].min(), config.pdbplot['Y'].max()])
+                config.ax.set_zlim([config.pdbplot['Z'].min(), config.pdbplot['Z'].max()])
+                config.ax.set_xlabel('X')
+                config.ax.set_ylabel('Y')
+                config.ax.set_zlabel('Z')
+                plt.draw()
+
 
 
 
