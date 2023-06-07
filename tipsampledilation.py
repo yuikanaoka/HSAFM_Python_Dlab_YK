@@ -43,6 +43,8 @@ from filelist import FileList
 from imagefifo import FileImport
 
 from Bio.PDB import PDBParser
+from Bio.PDB import PDBIO
+from io import StringIO
 import pandas as pd
 from PIL import Image
 
@@ -54,6 +56,8 @@ import noisefilter as nf
 
 import dilationfunctionmodule
 from concurrent.futures import ThreadPoolExecutor
+
+import freesasa
 
 class TipSampleDilationWindow(QMainWindow):
 
@@ -242,7 +246,7 @@ class TipSampleDilationWindow(QMainWindow):
         self.sampleatom_layout = QVBoxLayout()  # Create a new QVBoxLayout for the tip postion
         self.sampleatom_label = QLabel("Atom")
         self.sampleatom = QComboBox()
-        self.sampleatom.addItems(["C","N","O","ALL"])
+        self.sampleatom.addItems(["C","N","O","ALL","Extract"])
         self.sampleatom_layout.addWidget(self.sampleatom_label)
         self.sampleatom_layout.addWidget(self.sampleatom)
         self.sampleatom.currentIndexChanged.connect(self.atomtype_change)  # Connect the valueChanged signal to update_label
@@ -689,11 +693,12 @@ class TipSampleDilationWindow(QMainWindow):
         if file:
             self.file_label.setText(file)
             parser = PDBParser()
-            structure = parser.get_structure('protein', file)
+            config.structure = parser.get_structure('protein', file)
 
+        
             # 各アトムの情報をリストに格納
             atom_info = []
-            for model in structure:
+            for model in config.structure:
                 for chain in model:
                     for residue in chain:
                         for atom in residue:
@@ -701,7 +706,7 @@ class TipSampleDilationWindow(QMainWindow):
 
             # データフレームに変換しconfigに格納
             config.pdbdata = pd.DataFrame(atom_info, columns=['Model', 'Chain', 'Residue Name', 'Residue Number', 'Atom Name', 'X', 'Y', 'Z'])
-            print(config.pdbdata)
+            #print(config.pdbdata)
             self.display_pdb_3d()
 
     #=========================
@@ -797,6 +802,94 @@ class TipSampleDilationWindow(QMainWindow):
                 config.ax.set_ylabel('Y')
                 config.ax.set_zlabel('Z')
                 plt.draw()
+        
+        elif config.atomtype=="Extract":
+            print("extract was selected")
+            
+            
+            
+            coordinates = config.pdbdata[['X', 'Y', 'Z']].to_numpy()
+            print(coordinates)
+            print(coordinates.shape)
+
+            # 最小値と最大値を計算
+            min_values = coordinates.min(axis=0)
+            print(min_values)
+            max_values = coordinates.max(axis=0)
+            print(max_values)
+
+            # voxelサイズを設定
+            voxel_size = 4
+
+            # voxelの次元数を計算
+            dim = np.ceil((max_values - min_values) / voxel_size).astype(int)
+
+            # voxelの初期化
+            voxels = np.zeros(dim, dtype=bool)
+            #print(voxels)
+            print(voxels.shape)
+
+            # 各座標を適切なvoxelに割り当てる
+            indices = np.floor((coordinates - min_values) / voxel_size).astype(int)
+            #print(indices)
+            print("indices")
+            print(indices.shape)
+            print(indices.min(axis=0))
+            print(indices.max(axis=0))
+           
+
+            #print(indices[:, 0])
+            voxels[indices[:, 0], indices[:, 1], indices[:, 2]] = True
+            
+
+
+            #print(voxels)
+            #print(voxels.shape)
+
+            # voxel内にある座標を取得
+            in_voxel_coordinates = coordinates[indices[:,0], indices[:,1], indices[:,2]]
+            print("in_voxel_coordinates")
+            print(in_voxel_coordinates.shape)
+            min_values_0 = in_voxel_coordinates[:,0].min()
+            min_values_1 = in_voxel_coordinates[:,1].min()
+            min_values_2 = in_voxel_coordinates[:,2].min()
+            min_values = np.array([min_values_0,min_values_1,min_values_2])
+            print("min_values")
+            print(min_values)
+            print(min_values.shape)
+            
+           
+
+
+            fig = plt.figure()
+
+            # voxelを描画するAxes
+            ax_voxel = fig.add_subplot(121, projection='3d')
+            ax_voxel.voxels(voxels)
+            ax_voxel.set_xlabel('X')
+            ax_voxel.set_ylabel('Y')
+            ax_voxel.set_zlabel('Z')
+
+            # 座標をプロットするAxes
+            ax_coordinates = fig.add_subplot(122, projection='3d')
+            ax_coordinates.scatter(in_voxel_coordinates[:, 0], in_voxel_coordinates[:, 1], in_voxel_coordinates[:, 2])
+            ax_coordinates.set_xlim(0, 23)
+            ax_coordinates.set_ylim(0,24)
+            ax_coordinates.set_zlim(0,15)
+
+            ax_coordinates.set_xlabel('X')
+            ax_coordinates.set_ylabel('Y')
+            ax_coordinates.set_zlabel('Z')
+
+            plt.show()
+
+
+            
+
+            
+
+
+
         else:
             print(config.atomtype)
             config.pdbplot = config.pdbdata[config.pdbdata['Atom Name'] == config.atomtype]

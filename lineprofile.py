@@ -273,6 +273,20 @@ class LineProfile:
                 self.sxori=int((self.sx*self.zarray.shape[1])/config.dspimg.shape[1])
                 self.syori=int((self.sy*self.zarray.shape[0])/config.dspimg.shape[0])
 
+                start_point = np.array([self.sxori, self.syori])
+                end_point = np.array([self.exori, self.eyori])
+
+                # 線形補間で生成する点の数（N=1の間隔）
+                N = 1
+
+                # 始点と終点の間を等間隔に補間した新しい座標を生成
+                interpolated_points = np.linspace(start_point, end_point, N+2)[1:-1]
+
+                # 結果の表示
+                for point in interpolated_points:
+                    print(point)
+                
+
                 x_points=np.linspace(self.sxori,self.exori,dislistlen)
                 y_points=np.linspace(self.syori,self.eyori,dislistlen)
                 print("x_points_len: ", len(x_points))
@@ -391,7 +405,7 @@ class LineProfile:
                 distance_ticks= np.arange(len(distancelist[:,2]))*step
                 print ("distance_ticks: ", distance_ticks)
                 # Calculate the average Z value along the normal direction
-                profile_values = np.array([np.mean(f(x + d * normal[0], y + d * normal[1])) for (x, y, _), d, normal in zip(distancelist, distance_ticks, normals)])
+                profile_values = np.array([np.mean(f(x + d * normal[0], y + d * normal[1])) for (x, y, _), d, normal in zip(distancelist, 2, normals)])
 
                 distancelist[:,2] = profile_values
                 print(self.zarray.max())

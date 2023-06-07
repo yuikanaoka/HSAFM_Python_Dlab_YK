@@ -126,7 +126,10 @@ axes=None
 
 # pdb display
 pdbdata = None
+pdbdata_extract = None
 atomtype = "C"
+pdb_string=None
+structure=None
 appearance = "Dot"
 pdbplot=None
 pdbplot_x=None
