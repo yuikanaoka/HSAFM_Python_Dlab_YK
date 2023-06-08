@@ -1505,15 +1505,13 @@ class TipSampleDilationWindow(QMainWindow):
                         config.tipwave[iy][ix]=config.tipradius-math.sqrt(config.tipradius**2-r_i**2)
                     else:
                         config.tipwave[iy][ix]=r_i/math.tan(config.tipangle*math.pi/180)-z_off
-                    
-
+        
         createtipend=datetime.datetime.now()
         print ("create tip start time: "+str(createtipend)) 
         print ("create tip time: "+str(createtipend-createtipstart))
-        
-        
+        return config.tipsize,config.tipsize_half,config.tipwave
 
-        
+              
        
     #=========================
     # one pixel dilation
@@ -1546,53 +1544,70 @@ class TipSampleDilationWindow(QMainWindow):
     def dilation(self):
         starttime = datetime.datetime.now()
         print ("Start time: " + str(starttime))
-        config.xcoordinate=config.pdbplot['X']-config.pdbplot['X'].min()
-        config.ycoordinate=config.pdbplot['Y']-config.pdbplot['Y'].min()
-        config.zcoordinate=config.pdbplot['Z']-config.pdbplot['Z'].min()
+        # config.xcoordinate=config.pdbplot['X']-config.pdbplot['X'].min()
+        # config.ycoordinate=config.pdbplot['Y']-config.pdbplot['Y'].min()
+        # config.zcoordinate=config.pdbplot['Z']-config.pdbplot['Z'].min()
 
-        config.xcoordinate=config.xcoordinate/10
-        config.ycoordinate=config.ycoordinate/10
-        config.zcoordinate=config.zcoordinate/10
+        # config.xcoordinate=config.xcoordinate/10
+        # config.ycoordinate=config.ycoordinate/10
+        # config.zcoordinate=config.zcoordinate/10
 
-        #get the number of the atoms
-        atomnumber=len(config.pdbplot)
-        #set the number of pixels
-        config.grid_sizex=config.pixelxdirection
-        config.grid_sizey=math.ceil(config.pixelxdirection*(config.ycoordinate.max()/config.xcoordinate.max()))
+        # Convert to numpy arrays
+        config.xcoordinate = (config.pdbplot['X'] - config.pdbplot['X'].min()).values / 10
+        config.ycoordinate = (config.pdbplot['Y'] - config.pdbplot['Y'].min()).values / 10
+        config.zcoordinate = (config.pdbplot['Z'] - config.pdbplot['Z'].min()).values / 10
 
-        #set resolution nm/pixel
-        config.dx=(config.xcoordinate.max())/config.grid_sizex
-        config.dy=(config.ycoordinate.max())/config.grid_sizey
+        # Calculate max values
+        x_max = config.xcoordinate.max()
+        y_max = config.ycoordinate.max()
+
+        # Set the number of pixels
+        config.grid_sizex = config.pixelxdirection
+        config.grid_sizey = math.ceil(config.pixelxdirection * (y_max / x_max))
+
+        # Set resolution nm/pixel
+        config.dx = x_max / config.grid_sizex
+        config.dy = y_max / config.grid_sizey
+
+        print ("one pixel dilation")
+        onepixelstart=datetime.datetime.now()
+        print ("one pixel dilation start time: "+str(onepixelstart))
+        config.onepixeldilation = onepixeldilation_numba(config.xcoordinate, config.ycoordinate, config.zcoordinate, config.grid_sizex, config.grid_sizey, config.dx, config.dy)
+        onepixelend=datetime.datetime.now()
+        print ("one pixel dilation end time: "+str(onepixelend))
+        print ("one pixel dilation time: "+str(onepixelend-onepixelstart))
         
-        self.onepixeldilation()
+        #self.onepixeldilation()
         #make tip
-        self.createtip()
+        #self.createtip()
+        config.tipsize,config.tipsize_half,config.tipwave=self.createtip()
         #print("after create tip")
         #print (config.tipsize)
         #print (config.tipwave.shape)
 
-        l_x=config.grid_sizex+2*config.tipsize
-        l_y=config.grid_sizey+2*config.tipsize
-        config.dilationborder=np.zeros((l_x,l_y))
-        config.dilationborder[config.tipsize:l_x-config.tipsize,config.tipsize:l_y-config.tipsize]=config.onepixeldilation
-        img_array_border=(config.dilationborder/config.dilationborder.max())*255
-        img_array_border=img_array_border.astype(np.uint8)
+        # Apply the function
+        config.dilation = make_dilation(config.tipsize, config.tipsize_half, config.tipwave, config.onepixeldilation)
+
+        # l_x=config.grid_sizex+2*config.tipsize
+        # l_y=config.grid_sizey+2*config.tipsize
+        # config.dilationborder=np.zeros((l_x,l_y))
+        # config.dilationborder[config.tipsize:l_x-config.tipsize,config.tipsize:l_y-config.tipsize]=config.onepixeldilation
         
-        config.dilation=np.zeros((l_x,l_y))
-        #print (l_x)
-        #print (l_y)
+        # config.dilation=np.zeros((l_x,l_y))
+        # #print (l_x)
+        # #print (l_y)
 
 
-        #make dilation
-        for ix in range(0,l_x-config.tipwave.shape[0]):
-            for iy in range(0,l_y-config.tipwave.shape[1]):
+        # #make dilation
+        # for ix in range(0,l_x-config.tipwave.shape[0]):
+        #     for iy in range(0,l_y-config.tipwave.shape[1]):
                 
-                z_diffmap=config.dilationborder[ix:ix+config.tipsize,iy:iy+config.tipsize]-config.tipwave
-                displacement=z_diffmap.max()
-                config.dilation[ix+config.tipsize_half][iy+config.tipsize_half]=displacement
+        #         z_diffmap=config.dilationborder[ix:ix+config.tipsize,iy:iy+config.tipsize]-config.tipwave
+        #         displacement=z_diffmap.max()
+        #         config.dilation[ix+config.tipsize_half][iy+config.tipsize_half]=displacement
         
        
-        np.savetxt('dilation.csv', config.dilation, delimiter=',')
+        #np.savetxt('dilation.csv', config.dilation, delimiter=',')
         print ("dilation max: "+str(config.dilation.max()))
         print ("dilation min: "+str(config.dilation.min()))
 
@@ -1786,8 +1801,82 @@ def compute_indices(coordinates, min_values, voxel_size):
 
     return indices
 
+#================================================================================================================================================================
+#check enclosed func by numba paralell
+#================================================================================================================================================================
+@njit(parallel=True)
+def check_enclosed_p(voxels, indices):
+    num_indices = indices.shape[0]
+    enclosed_flags = np.zeros(num_indices, dtype=np.bool_)
+
+    for idx in prange(num_indices):
+        x, y, z = indices[idx]
+        surrounding = [(x+dx, y+dy, z+dz) for dx in range(-1, 2) for dy in range(-1, 2) for dz in range(-1, 2) 
+                    if abs(dx) + abs(dy) + abs(dz) == 1]
+
+        enclosed = True
+        for i, j, k in surrounding:
+            if 0 <= i < voxels.shape[0] and 0 <= j < voxels.shape[1] and 0 <= k < voxels.shape[2]:
+                if not voxels[i, j, k]:
+                    enclosed = False
+                    break
+        enclosed_flags[idx] = enclosed
+
+    return enclosed_flags
+
+@njit(parallel=True)
+def compute_indices_p(coordinates, min_values, voxel_size):
+    num_coordinates = coordinates.shape[0]
+    indices = np.zeros((num_coordinates, 3), dtype=np.int64)
+
+    for i in prange(num_coordinates):
+        for j in prange(3):
+            indices[i, j] = int((coordinates[i, j] - min_values[j]) / voxel_size)
+
+    return indices
 
 
+
+#================================================================================================================================================================
+#one pixel dilation func by numba
+#================================================================================================================================================================
+@njit(parallel=True)
+def onepixeldilation_numba(xcoordinate, ycoordinate, zcoordinate, grid_sizex, grid_sizey, dx, dy):
+    onepixeldilation = np.zeros((grid_sizex, grid_sizey))
+
+    for iy in prange(grid_sizey):
+        for ix in prange(grid_sizex):
+            z_max = 0
+            for iz in prange(len(zcoordinate)):
+                if ((ycoordinate[iz]>=(iy-1)*dy) & (ycoordinate[iz]<(iy)*dy) & (xcoordinate[iz]>=(ix-1)*dx) & (xcoordinate[iz]<(ix)*dx) &  (zcoordinate[iz]>(z_max))):
+                    z_max = zcoordinate[iz]
+            onepixeldilation[ix, iy] = z_max
+    return onepixeldilation
+
+#================================================================================================================================================================
+#dilation func by numba
+#================================================================================================================================================================
+@njit(parallel=True)
+def make_dilation(tipsize, tipsize_half, tipwave, onepixeldilation):
+    grid_sizex, grid_sizey = onepixeldilation.shape
+    l_x = grid_sizex + 2*tipsize
+    l_y = grid_sizey + 2*tipsize
+
+    dilationborder = np.zeros((l_x, l_y))
+    dilation = np.zeros((l_x, l_y))
+    dilationborder[tipsize:l_x-tipsize,tipsize:l_y-tipsize] = onepixeldilation
+
+    max_value = np.max(dilationborder)
+    
+    for ix in prange(l_x-tipwave.shape[0]):
+        for iy in prange(l_y-tipwave.shape[1]):
+            z_diffmap = np.zeros((tipsize, tipsize))
+            for zx in prange(tipsize):
+                for zy in prange(tipsize):
+                    z_diffmap[zx, zy] = dilationborder[ix+zx, iy+zy] - tipwave[zx, zy]
+            displacement = np.max(z_diffmap)
+            dilation[ix+tipsize_half, iy+tipsize_half] = displacement
+    return dilation
 
                             
 
