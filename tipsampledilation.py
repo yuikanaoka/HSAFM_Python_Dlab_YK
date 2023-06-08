@@ -58,6 +58,8 @@ import dilationfunctionmodule
 from concurrent.futures import ThreadPoolExecutor
 
 import itertools
+import numba as nb
+from numba import njit, prange
 
 class TipSampleDilationWindow(QMainWindow):
 
@@ -705,6 +707,7 @@ class TipSampleDilationWindow(QMainWindow):
                             atom_info.append([model.id, chain.id, residue.resname, residue.id[1], atom.name, atom.coord[0], atom.coord[1], atom.coord[2]])
 
             # データフレームに変換しconfigに格納
+            print("pdbdata")
             config.pdbdata = pd.DataFrame(atom_info, columns=['Model', 'Chain', 'Residue Name', 'Residue Number', 'Atom Name', 'X', 'Y', 'Z'])
             #print(config.pdbdata)
             self.display_pdb_3d()
@@ -714,19 +717,34 @@ class TipSampleDilationWindow(QMainWindow):
     #=========================
             
     def display_pdb_3d(self):
+        print("read pdb and plot display pdb 3d")
+        if config.ax != None:
+            print("graph cleared")
+            config.ax.cla()  # 現在のグラフをクリア
+            print("pdb")
+            print(len(config.pdbdata))
+            
 
         #atom type judge and display pdb as 3d plot
         if config.atomtype=="ALL":
             print("all")
+            print("pdb")
+            print(config.pdbdata)
+            print(len(config.pdbdata))
+            config.pdbplot=config.pdbdata
             unique_atom_names = config.pdbdata['Atom Name'].unique()
             cmap = plt.get_cmap('nipy_spectral')
             atom_colors = cmap(np.linspace(0, 1, len(unique_atom_names)))
             # Atom Name と色の対応関係を辞書に保存します。
             colors_dic= dict(zip(unique_atom_names, atom_colors))
             colors = config.pdbdata['Atom Name'].map(colors_dic).tolist()
-            config.fig=plt.figure(num="PDB Viewer")
-            config.ax = config.fig.add_subplot(111, projection='3d')
-            config.sc = config.ax.scatter(config.pdbdata['X'], config.pdbdata['Y'], config.pdbdata['Z'], s=10, marker='o', alpha=0.5, c=config.atomtype_color)
+            if config.fig ==None and config.ax==None:
+                config.fig=plt.figure(num="PDB Viewer")
+                config.ax = config.fig.add_subplot(111, projection='3d')
+            config.sc = config.ax.scatter(config.pdbplot['X'], config.pdbplot['Y'], config.pdbplot['Z'])
+            config.sc.set_facecolor(colors)  # 色のリストを適用
+            config.sc.set_edgecolor(colors)  # 色のリストを適用
+            #config.sc = config.ax.scatter(config.pdbdata['X'], config.pdbdata['Y'], config.pdbdata['Z'], s=10, marker='o', alpha=0.5, c=colors)
             #config.sc._offsets3d = (config.pdbdata['X'], config.pdbdata['Y'], config.pdbdata['Z'])
             #config.sc.set_facecolor(config.atomtype_color[config.atomtype])
             #config.sc.set_edgecolor(config.atomtype_color[config.atomtype])
@@ -738,14 +756,127 @@ class TipSampleDilationWindow(QMainWindow):
             config.ax.set_zlabel('Z')
             plt.show(block=False)
             plt.draw()
+
+        elif config.atomtype=="Extract":
+            print("Extract")
+            extractstart=datetime.datetime.now()
+            print ("extract start time: "+str(extractstart))
+
+            coordinates = config.pdbdata[['X', 'Y', 'Z']].to_numpy()
+            # print(coordinates)
+            # print(coordinates.shape)
+
+            # 最小値と最大値を計算
+            min_values = coordinates.min(axis=0)
+            # print(min_values)
+            max_values = coordinates.max(axis=0)
+            # print(max_values)
+
+            # voxelサイズを設定
+            voxel_size = 4
+            # voxelの次元数を計算
+            dim = np.ceil((max_values - min_values) / voxel_size).astype(int)
+            # voxelの初期化
+            voxels = np.zeros(dim, dtype=bool)
+            #print(voxels)
+            # print(voxels.shape)
+
+            # 各座標を適切なvoxelに割り当てる
+            indices = compute_indices(coordinates, min_values, voxel_size)
+            #indices = np.floor((coordinates - min_values) / voxel_size).astype(int)
+            #print(indices)
+            # print("indices")
+            # print(indices.shape)
+            # print(indices.min(axis=0))
+            # print(indices.max(axis=0))
+           
+            voxels[indices[:, 0], indices[:, 1], indices[:, 2]] = True
+
+            # in_voxel_coordinatesとin_voxel_indicesを計算
+            in_voxel_coordinates = coordinates[voxels[indices[:, 0], indices[:, 1], indices[:, 2]]]
+            in_voxel_indices = indices[voxels[indices[:, 0], indices[:, 1], indices[:, 2]]]
+            coordinates_voxelindex_data = np.hstack((in_voxel_coordinates, in_voxel_indices))
+
+            # DataFrameを作成
+            config.coordinates_voxelindex = pd.DataFrame(coordinates_voxelindex_data , columns=['X', 'Y', 'Z', 'index_x', 'index_y', 'index_z'])
+            # print(config.coordinates_voxelindex) 
+            
+            # 接触判定用の新たな列を追加
+            config.coordinates_voxelindex['enclosed'] = False
+            atom_types = config.pdbdata['Atom Name']
+            
+            # indices = config.coordinates_voxelindex[['index_x', 'index_y', 'index_z']].to_numpy()
+            # print(type(indices))
+            # print(indices.shape)
+            enclosed_flags = check_enclosed(voxels, indices)
+            # 結果をDataFrameに適用します
+            config.coordinates_voxelindex['enclosed'] = enclosed_flags
+            config.coordinates_voxelindex['Atom Name'] = atom_types
+
+
+            config.coordinates_voxelindex = config.coordinates_voxelindex[~config.coordinates_voxelindex['enclosed']]
+            atom_colors=config.coordinates_voxelindex['Atom Name']
+
+            
+            extractend=datetime.datetime.now()
+            print ("extract edn time: "+str(extractend))
+            print ("extract time: "+str(extractend-extractstart))
+
+
+            atom_types_numeric, _ = pd.factorize(atom_colors)
+            print(config.coordinates_voxelindex)
+            print(len(config.coordinates_voxelindex))
+
+    
+            # fig = plt.figure()
+
+            # # voxelを描画するAxes
+            # ax_voxel = fig.add_subplot(121, projection='3d')
+            # ax_voxel.voxels(voxels)
+            # ax_voxel.set_xlabel('X')
+            # ax_voxel.set_ylabel('Y')
+            # ax_voxel.set_zlabel('Z')
+
+            # # 座標をプロットするAxes
+            # ax_coordinates = fig.add_subplot(122, projection='3d')
+            # ax_coordinates.scatter(config.coordinates_voxelindex["X"], config.coordinates_voxelindex["Y"], config.coordinates_voxelindex["Z"], c=atom_types_numeric)
+            # # ax_coordinates.set_xlim(0, 23)
+            # # ax_coordinates.set_ylim(0,24)
+            # # ax_coordinates.set_zlim(0,15)
+
+            # ax_coordinates.set_xlabel('X')
+            # ax_coordinates.set_ylabel('Y')
+            # ax_coordinates.set_zlabel('Z')
+            # plt.show()
+
+            config.pdbplot = config.coordinates_voxelindex
+            print (len(config.pdbplot))
+            if config.fig ==None and config.ax==None:
+                config.fig=plt.figure(num="PDB Viewer")
+                config.ax = config.fig.add_subplot(111, projection='3d')
+            config.sc = config.ax.scatter(config.pdbplot['X'], config.pdbplot['Y'], config.pdbplot['Z'],c=atom_types_numeric)
+            #config.sc.set_facecolor(config.atomtype_color[config.atomtype])
+            #config.sc.set_edgecolor(config.atomtype_color[config.atomtype])
+            config.ax.set_xlim([config.pdbplot['X'].min(), config.pdbplot['X'].max()])
+            config.ax.set_ylim([config.pdbplot['Y'].min(), config.pdbplot['Y'].max()])
+            config.ax.set_zlim([config.pdbplot['Z'].min(), config.pdbplot['Z'].max()])
+            config.ax.set_xlabel('X')
+            config.ax.set_ylabel('Y')
+            config.ax.set_zlabel('Z')
+            plt.show(block=False)
+            plt.draw()
+           
+
+
         else:
             print(config.atomtype)
             #print (type(config.atomtype))
             config.pdbplot = config.pdbdata[config.pdbdata['Atom Name'] == config.atomtype]
             #print(config.pdbplot)
             print (len(config.pdbplot))
-            config.fig=plt.figure(num="PDB Viewer")
-            config.ax = config.fig.add_subplot(111, projection='3d')
+            if config.fig ==None and config.ax==None:
+                config.fig=plt.figure(num="PDB Viewer")
+                config.ax = config.fig.add_subplot(111, projection='3d')
             config.sc = config.ax.scatter(config.pdbplot['X'], config.pdbplot['Y'], config.pdbplot['Z'], s=10, marker='o', alpha=0.5)
             #config.sc._offsets3d = (config.pdbplot['X'], config.pdbplot['Y'], config.pdbplot['Z'])
             config.sc.set_facecolor(config.atomtype_color[config.atomtype])
@@ -764,13 +895,18 @@ class TipSampleDilationWindow(QMainWindow):
     # atomtype chnaged display update
     #=========================
     def display_atomtype_appearance_update(self):
-        print ("update")
-        config.ax.cla()  # 現在のグラフをクリア
+        print ("updated plot")
+        if config.ax != None:
+            print("graph cleared")
+            config.ax.cla()  # 現在のグラフをクリア
+            print("pdb")
+            print(len(config.pdbdata))
         
         #config.fig=plt.figure(num="PDB Viewer")
         #config.ax = config.fig.add_subplot(111, projection='3d')
         if config.atomtype=="ALL":
-            print("all")
+            print("all pdb data")
+            print(config.pdbdata)
             config.pdbplot = config.pdbdata
             print (len(config.pdbplot))
             if config.appearance=="Dot":
@@ -812,76 +948,61 @@ class TipSampleDilationWindow(QMainWindow):
             print ("extract start time: "+str(extractstart))
 
             coordinates = config.pdbdata[['X', 'Y', 'Z']].to_numpy()
-            print(coordinates)
-            print(coordinates.shape)
+            # print(coordinates)
+            # print(coordinates.shape)
 
             # 最小値と最大値を計算
             min_values = coordinates.min(axis=0)
-            print(min_values)
+            # print(min_values)
             max_values = coordinates.max(axis=0)
-            print(max_values)
+            # print(max_values)
 
             # voxelサイズを設定
             voxel_size = 4
-
             # voxelの次元数を計算
             dim = np.ceil((max_values - min_values) / voxel_size).astype(int)
-
             # voxelの初期化
             voxels = np.zeros(dim, dtype=bool)
             #print(voxels)
-            print(voxels.shape)
+            # print(voxels.shape)
 
             # 各座標を適切なvoxelに割り当てる
-            indices = np.floor((coordinates - min_values) / voxel_size).astype(int)
+            indices = compute_indices(coordinates, min_values, voxel_size)
+            #indices = np.floor((coordinates - min_values) / voxel_size).astype(int)
             #print(indices)
-            print("indices")
-            print(indices.shape)
-            print(indices.min(axis=0))
-            print(indices.max(axis=0))
+            # print("indices")
+            # print(indices.shape)
+            # print(indices.min(axis=0))
+            # print(indices.max(axis=0))
            
-
-            #print(indices[:, 0])
             voxels[indices[:, 0], indices[:, 1], indices[:, 2]] = True
-            in_voxel_coordinates = np.array([coordinates[i] for i in range(len(coordinates)) if voxels[tuple(indices[i])]])
-            in_voxel_indices = np.array([indices[i] for i in range(len(indices)) if voxels[tuple(indices[i])]])
+
+            # in_voxel_coordinatesとin_voxel_indicesを計算
+            in_voxel_coordinates = coordinates[voxels[indices[:, 0], indices[:, 1], indices[:, 2]]]
+            in_voxel_indices = indices[voxels[indices[:, 0], indices[:, 1], indices[:, 2]]]
             coordinates_voxelindex_data = np.hstack((in_voxel_coordinates, in_voxel_indices))
 
             # DataFrameを作成
             config.coordinates_voxelindex = pd.DataFrame(coordinates_voxelindex_data , columns=['X', 'Y', 'Z', 'index_x', 'index_y', 'index_z'])
-            print(config.coordinates_voxelindex) 
-            #coordinates_voxelindex_z= config.coordinates_voxelindex.sort_values('index_z', inplace=True)
-
+            # print(config.coordinates_voxelindex) 
+            
             # 接触判定用の新たな列を追加
             config.coordinates_voxelindex['enclosed'] = False
             atom_types = config.pdbdata['Atom Name']
             
+            # indices = config.coordinates_voxelindex[['index_x', 'index_y', 'index_z']].to_numpy()
+            # print(type(indices))
+            # print(indices.shape)
+            enclosed_flags = check_enclosed(voxels, indices)
+            # 結果をDataFrameに適用します
+            config.coordinates_voxelindex['enclosed'] = enclosed_flags
+            config.coordinates_voxelindex['Atom Name'] = atom_types
 
-            
 
-            # 各ボクセルについて
-            for index, row in config.coordinates_voxelindex.iterrows():
-                x, y, z = row['index_x'], row['index_y'], row['index_z']
-                
-                 # 周囲のボクセルのインデックスを計算
-                surrounding = [(x+dx, y+dy, z+dz) for dx, dy, dz in itertools.product([-1, 0, 1], repeat=3) 
-                            if abs(dx) + abs(dy) + abs(dz) == 1]  # (-1, 0, 1)の各組み合わせで、各座標の差の絶対値の和が1（つまり、1つだけ異なる）となるもの
-                
-                # 周囲の全てのボクセルが存在するかどうかを調べる
-                enclosed = True
-                for i, j, k in surrounding:
-                    i, j, k = int(i), int(j), int(k)  # Ensure i, j, k are integers
-                    if 0 <= i < voxels.shape[0] and 0 <= j < voxels.shape[1] and 0 <= k < voxels.shape[2]:  # voxelsの範囲内にあるかどうかをチェック
-                        if not voxels[i, j, k]:
-                            enclosed = False
-                            break  # 一つでも接していないボクセルが見つかったら、その他は調べずにループから抜ける
-                config.coordinates_voxelindex.loc[index, 'enclosed'] = enclosed
-                config.coordinates_voxelindex.loc[index, 'Atom Name'] = atom_types[index]
-
-            # 'enclosed'カラムの値がTrueの行を削除
             config.coordinates_voxelindex = config.coordinates_voxelindex[~config.coordinates_voxelindex['enclosed']]
             atom_colors=config.coordinates_voxelindex['Atom Name']
 
+            
             extractend=datetime.datetime.now()
             print ("extract edn time: "+str(extractend))
             print ("extract time: "+str(extractend-extractstart))
@@ -891,7 +1012,7 @@ class TipSampleDilationWindow(QMainWindow):
             print(config.coordinates_voxelindex)
             print(len(config.coordinates_voxelindex))
 
-
+    
             # fig = plt.figure()
 
             # # voxelを描画するAxes
@@ -911,7 +1032,6 @@ class TipSampleDilationWindow(QMainWindow):
             # ax_coordinates.set_xlabel('X')
             # ax_coordinates.set_ylabel('Y')
             # ax_coordinates.set_zlabel('Z')
-
             # plt.show()
 
             config.pdbplot = config.coordinates_voxelindex
@@ -1419,48 +1539,6 @@ class TipSampleDilationWindow(QMainWindow):
         print ("one pixel dilation end time: "+str(onepixelend))
         print ("one pixel dilation time: "+str(onepixelend-onepixelstart))
         
-    
-    # #=========================
-    # one pixel dilation multi thread
-    # #=========================
-
-    # def onepixeldilation(self):
-    #     print("one pixel dilation")
-    #     onepixelstart = datetime.datetime.now()
-    #     print("one pixel dilation start time: " + str(onepixelstart))
-        
-    #     config.onepixeldilation = np.zeros((config.grid_sizex, config.grid_sizey), dtype=np.float32)
-
-    #     with ThreadPoolExecutor() as executor:
-    #         futures = []
-    #         for iy in range(config.grid_sizey):
-    #             for ix in range(config.grid_sizex):
-    #                 future = executor.submit(self.calculate_pixel_value, iy, ix)
-    #                 futures.append(future)
-            
-    #         for future in futures:
-    #             future.result()
-    #     print(config.onepixeldilation)
-    #     onepixelend = datetime.datetime.now()
-    #     print("one pixel dilation end time: " + str(onepixelend))
-    #     print("one pixel dilation time: " + str(onepixelend - onepixelstart))
-
-    # def calculate_pixel_value(self, iy, ix):
-    #     y_min = (iy - 1) * config.dy
-    #     y_max = iy * config.dy
-    #     x_min = (ix - 1) * config.dx
-    #     x_max = ix * config.dx
-        
-    #     mask = (
-    #         (config.ycoordinate >= y_min) &
-    #         (config.ycoordinate < y_max) &
-    #         (config.xcoordinate >= x_min) &
-    #         (config.xcoordinate < x_max) &
-    #         (config.zcoordinate > 0)
-    #     )
-    #     z_max = np.max(config.zcoordinate[mask])
-    #     config.onepixeldilation[ix, iy] = z_max
-    
   
     #=========================
     # make dilation
@@ -1669,13 +1747,49 @@ class TipSampleDilationWindow(QMainWindow):
             config.ax.set_zlabel('Z')
             config.ax.view_init(elev=0, azim=90)
             plt.draw()
-        
+
+
+
+#================================================================================================================================================================
+#check enclosed func by numba
+#================================================================================================================================================================
+   
+@nb.njit
+def check_enclosed(voxels, indices):
+    num_indices = indices.shape[0]
+    enclosed_flags = np.zeros(num_indices, dtype=np.bool_)
+
+    for idx in range(num_indices):
+        x, y, z = indices[idx]
+        surrounding = [(x+dx, y+dy, z+dz) for dx in range(-1, 2) for dy in range(-1, 2) for dz in range(-1, 2) 
+                    if abs(dx) + abs(dy) + abs(dz) == 1]
+
+        enclosed = True
+        for i, j, k in surrounding:
+            if 0 <= i < voxels.shape[0] and 0 <= j < voxels.shape[1] and 0 <= k < voxels.shape[2]:
+                if not voxels[i, j, k]:
+                    enclosed = False
+                    break
+        enclosed_flags[idx] = enclosed
+
+    return enclosed_flags
+            
+
+@nb.njit
+def compute_indices(coordinates, min_values, voxel_size):
+    num_coordinates = coordinates.shape[0]
+    indices = np.zeros((num_coordinates, 3), dtype=np.int64)
+
+    for i in range(num_coordinates):
+        for j in range(3):
+            indices[i, j] = int((coordinates[i, j] - min_values[j]) / voxel_size)
+
+    return indices
 
 
 
 
-
-                        
+                            
 
 
 
