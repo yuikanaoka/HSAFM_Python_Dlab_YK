@@ -1586,7 +1586,7 @@ class TipSampleDilationWindow(QMainWindow):
         #print (config.tipwave.shape)
 
         # Apply the function
-        config.dilation = make_dilation(config.tipsize, config.tipsize_half, config.tipwave, config.onepixeldilation)
+        config.dilation = make_dilation_numba(config.tipsize, config.tipsize_half, config.tipwave, config.onepixeldilation)
 
         # l_x=config.grid_sizex+2*config.tipsize
         # l_y=config.grid_sizey+2*config.tipsize
@@ -1857,7 +1857,7 @@ def onepixeldilation_numba(xcoordinate, ycoordinate, zcoordinate, grid_sizex, gr
 #dilation func by numba
 #================================================================================================================================================================
 @njit(parallel=True)
-def make_dilation(tipsize, tipsize_half, tipwave, onepixeldilation):
+def make_dilation_numba(tipsize, tipsize_half, tipwave, onepixeldilation):
     grid_sizex, grid_sizey = onepixeldilation.shape
     l_x = grid_sizex + 2*tipsize
     l_y = grid_sizey + 2*tipsize
