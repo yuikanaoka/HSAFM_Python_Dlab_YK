@@ -35,6 +35,7 @@ import matplotlib.pyplot as plt
 import sys
 import math
 from scipy.interpolate import interp2d
+from matplotlib.widgets import Cursor
 
 #plt.ion()
 class LineWindow(QMainWindow):
@@ -42,52 +43,6 @@ class LineWindow(QMainWindow):
     def __init__(self, parent=None):
         super(LineWindow, self).__init__(parent)
     
-
-def temp_function(arg1,arg2):
-    print("tmp_function out of class")
-    print("point 0 is :"+str(arg1))
-    print("point 1 is :"+str(arg2))
-
-def calc_PLdist(new_pnt,old_line):
-   # arg1, new_point: new point [x,y]
-   # arg2, old line : existed point set, LineList
-   tmp_dist_sub = old_line - new_pnt
-   tmp_dist_sqr = tmp_dist_sub*tmp_dist_sub
-   tmp_dist_sqr_sum = np.sum(tmp_dist_sqr,axis=1) 
-   tmp_dist = np.sqrt(tmp_dist_sqr_sum)
-   return tmp_dist
-    
-# detect radius: if new clicked point is close to the existed profile line by detect_radius
-detect_radius = 10
-
-
-class Node:
-    def __init__(self, imageindex = None):
-        self.imageindex = imageindex
-        self.nextindex = None
-    def __array__(self, imageindex) -> np.array:
-        return np.array([imageindex[0],imageindex[1]],np.int32)
-
-class index_list:
-    def __init__(self):
-        self.start_point = None
-        self.end_point = None
-
-    #insert new index after middle_node
-    def insert_index(self,middle_node, new_index):
-        if middle_node is None:
-            print("The mentioned node is absent")
-            return
-        NewNode = Node(new_index)
-        NewNode.nextindex = middle_node.nextindex
-        middle_node.nextindex = NewNode
-    
-    def print_index(self):
-        printval = self.start_point
-        while printval is not None:
-            print("Class print:", printval.imageindex)
-            printval = printval.nextindex
-
 class LineProfile:
 
     def __init__(self):
@@ -105,7 +60,8 @@ class LineProfile:
        
         self.colorarray=config.dspimg #colored img array
         self.grayarray=cv2.cvtColor(config.dspimg, cv2.COLOR_BGR2GRAY) #gray scale img array from 0 to 255 value
-        self.zarray=config.ZaryData
+        #need to 180° 左回転、左右対称に反転
+        
         self.xscansize=config.XScanSize
         self.yscansize=config.YScanSize
         self.xpixel=config.XPixel
@@ -117,7 +73,8 @@ class LineProfile:
         self.eynm=0
 
         self.index=config.index
-       
+
+        
         self.s0=False #click event
         self.s1=False #drag and draw line event
         self.s2=False #drag and update lineprofile event
@@ -125,7 +82,7 @@ class LineProfile:
         self.s4=False #set start point
         self.s5=False #set end point
         self.status = 0x00
-        self.index_list = index_list()
+        #self.index_list = index_list()
 
 
     def CloseEvent(self,event):
@@ -149,274 +106,178 @@ class LineProfile:
     def DrawLine(self,event, x, y, flags, param):
        
         if config.lineopen==True and config.lineclose==False:
+            self.zarray=np.fliplr(np.rot90(config.ZaryData,2))
             
             if event == cv2.EVENT_LBUTTONDOWN:  #左クリック押下時
                 #set_startpnt = False
                 #set_endpnt = False
-                if self.s3:
-                    #status s3: released event, line exists
-                    #if line exsited, check distance between the clicked point and the line
-                    new_pts = [x,y]
-                    print("3rd pnt is :",new_pts)
-                    tmp_dist = calc_PLdist(new_pts,self.LineList)
-                    print("Min Dist is: ",tmp_dist.min())
-                    print("Max Dist is: ",tmp_dist.max())
-                    print("tmp_dist[0]:",tmp_dist[0])
-                    print("tmp_dist[-1]:",tmp_dist[-1])
-                    if tmp_dist.min()<detect_radius:
-                        if tmp_dist.min() in tmp_dist[0:int(0.10*len(tmp_dist))]:
-                            print("min at start point")
-                            #set_startpnt = True
-                            self.s4 = True
-                            self.s5 = False
-                            self.sx = x
-                            self.sy = y
-                            self.index_list.start_point = Node([x,y])
-                        elif tmp_dist.min() in tmp_dist[-1:-int(0.10*len(tmp_dist)):-1]:
-                            print("min at end point")
-                            #set_endpnt = True
-                            self.s5 = True
-                            self.s4 = False
-                            self.ex = x
-                            self.ey = y
-                            self.index_list.end_point = Node([x,y])
-                        else:
-                            print("we will add one point here")
-                            # fetch closest pixel coordinates in the line
-                            tmp_idx = np.where(tmp_dist == tmp_dist.min())[0]
-                            self.pts = np.insert([[self.sx,self.sy],[self.ex,self.ey]],1,[x,y],axis=0)
-                            print("points on line:",self.pts)
-                            print("tmp_idx: ", tmp_idx[0])
-                            tmp_idx = tmp_idx[0]
-                            tmp_x=self.LineList[tmp_idx,:]
-                            print("tmp_x:", tmp_x)
-                            print("point list:", self.pts.shape)
-                            cv2.circle(self.temp,(tmp_x[0],tmp_x[1]),5,(200,200,0),-1)
-                            cv2.imshow('img1ch', self.temp)
-                            cv2.waitKey(1)
+                # if self.s3:
+                #     #status s3: released event, line exists
+                #     #if line exsited, check distance between the clicked point and the line
+                #     new_pts = [x,y]
+                #     print("3rd pnt is :",new_pts)
+                #     tmp_dist = calc_PLdist(new_pts,self.LineList)
+                #     print("Min Dist is: ",tmp_dist.min())
+                #     print("Max Dist is: ",tmp_dist.max())
+                #     print("tmp_dist[0]:",tmp_dist[0])
+                #     print("tmp_dist[-1]:",tmp_dist[-1])
+                #     if tmp_dist.min()<detect_radius:
+                #         if tmp_dist.min() in tmp_dist[0:int(0.10*len(tmp_dist))]:
+                #             print("min at start point")
+                #             #set_startpnt = True
+                #             self.s4 = True
+                #             self.s5 = False
+                #             self.sx = x
+                #             self.sy = y
+                #             self.index_list.start_point = Node([x,y])
+                #         elif tmp_dist.min() in tmp_dist[-1:-int(0.10*len(tmp_dist)):-1]:
+                #             print("min at end point")
+                #             #set_endpnt = True
+                #             self.s5 = True
+                #             self.s4 = False
+                #             self.ex = x
+                #             self.ey = y
+                #             self.index_list.end_point = Node([x,y])
+                #         else:
+                #             print("we will add one point here")
+                #             # fetch closest pixel coordinates in the line
+                #             tmp_idx = np.where(tmp_dist == tmp_dist.min())[0]
+                #             self.pts = np.insert([[self.sx,self.sy],[self.ex,self.ey]],1,[x,y],axis=0)
+                #             print("points on line:",self.pts)
+                #             print("tmp_idx: ", tmp_idx[0])
+                #             tmp_idx = tmp_idx[0]
+                #             tmp_x=self.LineList[tmp_idx,:]
+                #             print("tmp_x:", tmp_x)
+                #             print("point list:", self.pts.shape)
+                #             cv2.circle(self.temp,(tmp_x[0],tmp_x[1]),5,(200,200,0),-1)
+                #             cv2.imshow('img1ch', self.temp)
+                #             cv2.waitKey(1)
 
-                    imageH = self.zarray.shape[0]
-                    imageW = self.zarray.shape[1]
-                    self.s0 = True
-                    self.sx = x      #始点x
-                    self.sy = y      #始点y
-                    self.index_list.start_point = Node([x,y])
-                    self.index_list.print_index()
-                    self.height_startpoint=self.zarray[self.sy,self.sx]
-                else:
-                    self.status = self.status or 0x01 
-                    imageH = self.zarray.shape[0]
-                    print ("imageH: ",imageH)
-                    imageW = self.zarray.shape[1]
-                    print ("imageW: ",imageW)
-                    print("drawline "+str(self.index))
-                    self.s0 = True
-                    self.s5 = True
-                    self.s4 = False
-                    self.sx = x      #始点x
-                    print("sx: ",self.sx)
-                    self.sy = y      #始点y
-                    print("sy: ",self.sy)
-                    self.index_list.start_point = Node([x,y])
-                    self.index_list.print_index()
-                    self.height_startpoint=self.zarray[self.sy,self.sx]
-
+                #     imageH = self.zarray.shape[0]
+                #     imageW = self.zarray.shape[1]
+                #     self.s0 = True
+                #     self.sx = x      #始点x
+                #     self.sy = y      #始点y
+                #     self.index_list.start_point = Node([x,y])
+                #     self.index_list.print_index()
+                #     self.height_startpoint=self.zarray[self.sy,self.sx]
+                # else:
+                #     self.status = self.status or 0x01 
+                #     imageH = self.zarray.shape[0]
+                #     print ("imageH: ",imageH)
+                #     imageW = self.zarray.shape[1]
+                #     print ("imageW: ",imageW)
+                #     print("drawline "+str(self.index))
+                #     self.s0 = True
+                #     self.s5 = True
+                #     self.s4 = False
+                #     self.sx = x      #始点x
+                #     print("sx: ",self.sx)
+                #     self.sy = y      #始点y
+                #     print("sy: ",self.sy)
+                #     self.index_list.start_point = Node([x,y])
+                #     self.index_list.print_index()
+                #     self.height_startpoint=self.zarray[self.sy,self.sx]
+                self.s0 = True
+                self.sx = x      #始点x
+                self.sy = y      #始点y
+                self.P1 = (x,y)
                 print("Left-clicked. Start point:(%d, %d)" %(self.sx, self.sy))
                 #temp_function(self.sx,self.sy)
-                self.sxori=int((self.sx*self.zarray.shape[1])/config.dspimg.shape[1])
-                self.syori=int((self.sy*self.zarray.shape[0])/config.dspimg.shape[0])
+                # self.sxori=int((self.sx*self.zarray.shape[1])/config.dspimg.shape[1])
+                # self.syori=int((self.sy*self.zarray.shape[0])/config.dspimg.shape[0])
                 
-                self.sxnm=(self.sxori/self.zarray.shape[1])*self.xscansize
-                self.synm=(self.syori/self.zarray.shape[0])*self.yscansize
+                # self.sxnm=(self.sxori/self.zarray.shape[1])*self.xscansize
+                # self.synm=(self.syori/self.zarray.shape[0])*self.yscansize
                
                     
             elif event == cv2.EVENT_MOUSEMOVE and self.s0 and (not self.s1):  #左クリックでドラッグ中
                 # if click around start point
-                if self.s4:
-                    self.sx = x
-                    self.sy = y
-                    self.index_list.start_point = Node([x,y])
-                else:
-                    self.ex = x
-                    self.ey = y
-                    self.index_list.end_point = Node([x,y])
+                self.ex = x
+                self.ey = y
+                self.P2 = (x,y)
                 self.temp=config.dspimg.copy()
-                # change to cv2.polylines from line for multipoint function
-                #pts = np.array([[self.sx,self.sy],[self.ex,self.ey]],np.int32)
-                pts = np.array([self.index_list.start_point.imageindex, self.index_list.end_point.imageindex])
-                cv2.polylines(self.temp,[pts],False,(0,255,0),2)
-                line_list = np.array([[self.sx,self.sy],[self.ex, self.ey]],dtype=np.int16)
-                cv2.circle(self.temp,tuple(line_list[0,:]),detect_radius,(200,200,0),2)
-                cv2.circle(self.temp,tuple(line_list[1,:]),detect_radius,(200,200,0),2)
+                cv2.line(self.temp,(self.sx,self.sy),(self.ex,self.ey),(0,255,0),2)
                 cv2.imshow('img1ch', self.temp)
                 self.s1 = True
                 cv2.waitKey(1)
                 self.s1 = False
 
-                self.Calculate_Distance()
+                #self.Calculate_Distance()
 
-                dX = self.ex-self.sx
-                dY = self.ey-self.sy
-                dXa = np.abs(dX)
-                dYa = np.abs(dY)
-
-                dXa=int((dX*self.zarray.shape[0])/config.dspimg.shape[0])
-                dYa=int((dY*self.zarray.shape[1])/config.dspimg.shape[1])
-
-                dislistlen=int(np.sqrt(dXa**2+dYa**2))
-                print("dislistlen: ", dislistlen)
+                
+                # dislistlen=int(np.sqrt(dXa**2+dYa**2))
+                # print("dislistlen: ", dislistlen)
                 #dislistlen2=int(np.sqrt(((dX*self.zarray.shape[0])/config.dspimg.shape[0]))**2+((dY*self.zarray.shape[1])/config.dspimg.shape[1])**2)
                 #print("dislistlen2: ", dislistlen2)
+
+                #self.zarray=np.fliplr(np.rot90(self.zarray,2))
 
                 self.exori=int((self.ex*self.zarray.shape[1])/config.dspimg.shape[1])
                 self.eyori=int((self.ey*self.zarray.shape[0])/config.dspimg.shape[0])
                 self.sxori=int((self.sx*self.zarray.shape[1])/config.dspimg.shape[1])
                 self.syori=int((self.sy*self.zarray.shape[0])/config.dspimg.shape[0])
 
-                start_point = np.array([self.sxori, self.syori])
-                end_point = np.array([self.exori, self.eyori])
-
-                # 線形補間で生成する点の数（N=1の間隔）
-                N = 1
-
-                # 始点と終点の間を等間隔に補間した新しい座標を生成
-                interpolated_points = np.linspace(start_point, end_point, N+2)[1:-1]
-
-                # 結果の表示
-                for point in interpolated_points:
-                    print(point)
+                print("exori: ",self.exori)
+                print("eyori: ",self.eyori)
+                print("sxori: ",self.sxori)
+                print("syori: ",self.syori)
+                
+                
                 
 
-                x_points=np.linspace(self.sxori,self.exori,dislistlen)
-                y_points=np.linspace(self.syori,self.eyori,dislistlen)
-                print("x_points_len: ", len(x_points))
-                print("y_points_len: ", len(y_points))
+                dx = self.exori-self.sxori
+                dy = self.eyori-self.syori
+                print("dx: ",dx)
+                print("dy: ",dy)
+                line_length = int(math.sqrt(dx**2 + dy**2))
+                #print("line_length: ",line_length)
 
-
-
-
-               
-                # distancelist[x_px_index, y_px_index, z_value]
-                distancelist = np.zeros((dislistlen, 3), dtype=np.float32)
+                dxnm=dx*(config.XScanSize/config.XPixel)
+                print("dxnm: ",dxnm)
+                dynm=dy*(config.YScanSize/config.YPixel)
+                print("dynm: ",dynm)
+                line_length_nm=int(np.sqrt(dxnm**2+dynm**2))
+                print("line_length_nm: ",line_length_nm)    
                 
-                #distancelist.fill(np.nan)
-                #print ("distancelistshapw: ", distancelist.shape)
+                dXa = np.abs(dx)
+                dYa = np.abs(dy)
 
-                # negativeY = self.syori > self.eyori
-                # negativeX = self.sxori > self.exori
+                dXa=int((dx*self.zarray.shape[0])/config.dspimg.shape[0])
+                dYa=int((dy*self.zarray.shape[1])/config.dspimg.shape[1])
 
-                # if self.sxori == self.exori and self.syori != self.eyori: # vertical line
-                #     distancelist[:,0] = self.sxori
-                #     if negativeY:
-                #         distancelist[:,1] = np.arange(self.syori-1, self.syori-dYa-1, -1)
-                #     else:
-                #         distancelist[:,1] = np.arange(self.syori+1, self.syori+dYa+1)
-                # elif self.syori == self.eyori and self.sxori != self.exori: # horizontal line
-                #     distancelist[:,1] = self.syori
-                #     if negativeX:
-                #         distancelist[:,0] = np.arange(self.sxori-1, self.sxori-dXa-1, -1)
-                #     else:
-                #         distancelist[:,0] = np.arange(self.sxori+1, self.sxori+dXa+1)
-                # elif self.sxori == self.exori and self.syori == self.eyori:
-                #     pass
-                # else:
-                #     steepSlope = dYa > dXa
-                #     if steepSlope:
-                #         slope_f32 = np.float32(dX)/np.float32(dY)
-                #         if negativeY:
-                #             distancelist[:,1] = np.arange(self.syori-1, self.syori-dYa-1, -1)
-                #         else:
-                #             distancelist[:,1] = np.arange(self.syori+1, self.syori+dYa+1)
-                #         distancelist[:,0] = (slope_f32*(distancelist[:,1]-self.syori)).astype(int)+self.sxori
-                    
-                #     else:
-                #         slope_f32 = np.float32(dY)/np.float32(dX)
-                #         if negativeX:
-                #             distancelist[:,0] = np.arange(self.sxori-1, self.sxori-dXa-1, -1)
-                #         else:
-                #             distancelist[:,0] = np.arange(self.sxori+1, self.sxori+dXa+1)
-                #         distancelist[:,1] = (slope_f32*(distancelist[:,0]-self.sxori)).astype(int)+self.syori
-                #         #print ("distancelist: ", distancelist)
+                 # Check if line exists (if origin and end are not the same point)
+                if line_length > 0:
+                    x_spacing = dx / line_length
+                    y_spacing = dy / line_length
 
-                # colX = distancelist[:,0]
-                # colY = distancelist[:,1]
-                # distancelist = distancelist[(colX >=0) & (colY >= 0) & (colX < self.zarray.shape[1]) & (colY < self.zarray.shape[0])]
-                # #print ("distancelist: ", distancelist)
-                # distancelist[:,2] = self.zarray[distancelist[:,0].astype(np.uint),distancelist[:,1].astype(np.uint)]
-                # print ("distancelist: ", distancelist)
-                H, W = self.zarray.shape
+                    points = []
+                    values = []
 
-                # Generate the grid for the original image
-                x = np.linspace(0, W - 1, W)
-                y = np.linspace(0, H - 1, H)
+                    # Iterate over the line_length to get equally spaced points and corresponding values
+                    for i in range(line_length + 1):
+                        x = round(self.sxori + i * x_spacing)
+                        y = round(self.syori + i * y_spacing)
+                        points.append((x, y))
+                        values.append(self.zarray[y][x])
 
-                # Create interpolation function
-                f = interp2d(x, y, self.zarray, kind='cubic')
+                else:
+                    # If origin and end are the same point, just use the single point
+                    points = [(self.sxori, self.syori)]
+                    values = [self.zarray[self.syori][self.sxori]]
 
-                # Variables for x and y coordinates
-                negativeY = self.syori > self.eyori
-                negativeX = self.sxori > self.exori
+                print("points: ",points)
+                print("values: ",values)
+                #print("line_length: ",len(values))
 
-                # Fill distancelist based on conditions
-                if self.sxori == self.exori and self.syori != self.eyori: # vertical line
-                    distancelist[:,0] = self.sxori
-                    if negativeY:
-                        distancelist[:,1] = np.linspace(self.syori-1, self.syori-dYa-1, dislistlen)
-                    else:
-                        distancelist[:,1] = np.linspace(self.syori+1, self.syori+dYa+1, dislistlen)
-                elif self.syori == self.eyori and self.sxori != self.exori: # horizontal line
-                    distancelist[:,1] = self.syori
-                    if negativeX:
-                        distancelist[:,0] = np.linspace(self.sxori-1, self.sxori-dXa-1, dislistlen)
-                    else:
-                        distancelist[:,0] = np.linspace(self.sxori+1, self.sxori+dXa+1, dislistlen)
-                elif self.sxori == self.exori and self.syori == self.eyori: # single point
-                    pass
-                else: # arbitrary line
-                    steepSlope = dYa > dXa
-                    if steepSlope:
-                        slope_f32 = np.float32(dX)/np.float32(dY)
-                        if negativeY:
-                            distancelist[:,1] = np.linspace(self.syori-1, self.syori-dYa-1, dislistlen)
-                        else:
-                            distancelist[:,1] = np.linspace(self.syori+1, self.syori+dYa+1, dislistlen)
-                        distancelist[:,0] = (slope_f32*(distancelist[:,1]-self.syori)).astype(int)+self.sxori
-                    else:
-                        slope_f32 = np.float32(dY)/np.float32(dX)
-                        if negativeX:
-                            distancelist[:,0] = np.linspace(self.sxori-1, self.sxori-dXa-1, dislistlen)
-                        else:
-                            distancelist[:,0] = np.linspace(self.sxori+1, self.sxori+dXa+1, dislistlen)
-                        distancelist[:,1] = (slope_f32*(distancelist[:,0]-self.sxori)).astype(int)+self.syori
+                scaling_factor = line_length_nm / line_length
+                # Create a list of nm positions corresponding to values
+                nm_positions = [i * scaling_factor for i in range(len(values))]
+                print("nm_positions: ",len(nm_positions))
 
-                colX = distancelist[:,0]
-                colY = distancelist[:,1]
 
-                # Make sure that the coordinates are within the valid range
-                distancelist = distancelist[(colX >=0) & (colY >= 0) & (colX < self.zarray.shape[1]) & (colY < self.zarray.shape[0])]
 
-                # Compute interpolated z values
-                z_values = np.array([f(x, y)[0] for x, y in zip(distancelist[:,0], distancelist[:,1])])
-                dx = np.gradient(distancelist[:,0])
-                dy = np.gradient(distancelist[:,1])
-                normals = np.stack((-dy, dx), axis=1)
-                normals /= np.linalg.norm(normals, axis=1)[:, np.newaxis]  # Normalize the normals
-                step=self.distance/len(distancelist[:,2])
-                distance_ticks= np.arange(len(distancelist[:,2]))*step
-                print ("distance_ticks: ", distance_ticks)
-                # Calculate the average Z value along the normal direction
-                profile_values = np.array([np.mean(f(x + d * normal[0], y + d * normal[1])) for (x, y, _), d, normal in zip(distancelist, 2, normals)])
-
-                distancelist[:,2] = profile_values
-                print(self.zarray.max())
-                distancelist[:,2] = distancelist[:,2]-distancelist[:,2].min()
-                print ("distancelist.shape: ", distancelist.shape)
-                print ("distancelist: ", distancelist)
-                print ("distancelist[:,2]min: ", distancelist[:,2].min())
-                self.LineList=np.array(distancelist[:,0:2])
-                
-                #distance_ticks= np.arange(len(distancelist[:,2]))*step
-                self.UpdatePlot(config.linewindow,config.figure,config.axes,distance_ticks, distancelist)
+                self.UpdatePlot(config.linewindow,config.figure,config.axes,nm_positions, values)
 
                 self.s2 = True
                         
@@ -424,25 +285,25 @@ class LineProfile:
             elif event == cv2.EVENT_LBUTTONUP: #clear the state
                 self.s2=False
                 self.s1=False
-                self.s0=False             
-                # if one line exist, s3 will be True until RESET
-                self.s3=True 
-                self.s4=False
-                self.s5=False
+                self.s0=False
+                np.savetxt("zarray.csv",self.zarray)             
                 print("Left-releasec. End point:(%d, %d)" %(self.ex, self.ey))
                 
 
                
 
     def UpdatePlot(self,profile_window,profile_figure,profile_axes,distance_ticks,profile_zvaluelist):
-        self.zvaluelist=profile_zvaluelist[:,2]
+        self.zvaluelist=profile_zvaluelist
         self.line=profile_window
         self.figure=profile_figure
         self.axes=profile_axes
 
         self.line.set_data(distance_ticks,self.zvaluelist)
-        self.axes.set_xlim(distance_ticks.min(),distance_ticks.max()) 
-        self.axes.set_ylim(self.zvaluelist.min(),self.zvaluelist.max())
+        self.line.set_color("red")
+        #self.axes.set_xlim(max(distance_ticks),min(distance_ticks)) 
+        self.axes.set_xlim(min(distance_ticks),max(distance_ticks)) 
+        self.axes.set_ylim(min(self.zvaluelist),max(self.zvaluelist)+1)
+        #plt.gca().invert_yaxis()
         self.figure.canvas.draw()
         self.figure.canvas.flush_events()
         self.figure.canvas.mpl_connect("close_event",self.CloseEvent)
@@ -460,8 +321,9 @@ class LineProfile:
         Multi_chk_pos.set_axis_off() # turn off the surrounding line of checkbox
         Cursor_chk_pos = plt.axes([.25, .85, .10, .15])
         Cursor_chk_pos.set_axis_off()
-        self.Multipnt_chk = CheckButtons(Multi_chk_pos,['Multi-Point'])
+        #self.Multipnt_chk = CheckButtons(Multi_chk_pos,['Multi-Point'])
         self.Cursor_chk = CheckButtons(Cursor_chk_pos,['Cursor']) # default status is False
+        self.Cursor_chk.on_clicked(self.Cursor_chk_func)
         axReset = plt.axes([0.38, 0.9, 0.1, 0.05])
         self.bnext = Button(axReset, 'Reset',color = "white")
         self.bnext.on_clicked(self.dbg_echo)
@@ -505,17 +367,27 @@ class LineProfile:
 
     def point_insert(self):
         print("greetings")
+    
+    def Cursor_chk_func(self,label):
+        cursor_checked = self.Cursor_chk.get_status()[0]
+        self.line =config.linewindow
+        self.figure=config.figure
+        self.axes=config.axes
 
-    class Node:
-        def __init__(self, imageindex = None):
-            self.imageindex = imageindex
-            self.nextindex = None
-    class index_manange:
-        def __init__(self):
-            self.start_point = None
+        if cursor_checked:
+            print("Cursor_chk_func")
+            cursor = Cursor(self.axes, useblit=True, color='red', linewidth=1)  # カーソルの作成例
+        else:  # カーソルのチェックが外れた場合の処理
+            # カーソルを削除するコードをここに記述する
+            print("Cursor_chk_func else")
+            cursor = None  # カーソルオブジェクトを削除する
         
-        def print_index(self):
-            printval = self.start_point
-            while printval is not None:
-                print(printval.imageindex)
-                printval = printval.nextindex
+        self.figure.canvas.draw()  # グラフを再描画する
+        self.figure.canvas.flush_events()
+        self.figure.canvas.mpl_connect("close_event",self.CloseEvent)
+        
+
+
+
+
+   
