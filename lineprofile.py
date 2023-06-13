@@ -382,9 +382,9 @@ class LineProfile:
             print("Cursor_chk_func")
 
             # If cursor does not exist, create it
-            if self.cursor1 is None:
-                self.cursor1 = SnaptoCursor(config.axes, config.nm_positions, config.heightvalues)
-                config.figure.canvas.mpl_connect('button_press_event', self.cursor1.onclick)
+            #if self.cursor1 is None:
+            self.cursor1 = SnaptoCursor(config.axes, config.nm_positions, config.heightvalues)
+            config.figure.canvas.mpl_connect('button_press_event', self.cursor1.onclick)
 
             # Show the dot and activate the cursor
             self.cursor1.set_visible(True)
@@ -393,11 +393,11 @@ class LineProfile:
             print("Cursor_chk_func else")
 
             # Hide the dot, deactivate the cursor, and clear the previous markers and legend
-            if self.cursor1 is not None:
-                self.cursor1.set_visible(False)
-                self.cursor1.deactivate()
-                self.cursor1.clear_markers()
-                self.cursor1.clear_legend()
+            
+            self.cursor1.set_visible(False)
+            self.cursor1.deactivate()
+            self.cursor1.clear_markers()
+            self.cursor1.clear_legend()
 
         config.figure.canvas.draw()
         config.figure.canvas.flush_events()
@@ -417,6 +417,8 @@ class SnaptoCursor(Cursor):
         self.markers = []  # list to store markers
         self.set_count = 0  # counter to track click sets
         self.active = False  # cursor is inactive by default
+        self.legend_axes = plt.axes([0.7, 0.85, 0.2, 0.1])
+        self.legend_axes.axis('off')  # Turn off the axis
 
     def activate(self):
         self.active = True
@@ -457,25 +459,33 @@ class SnaptoCursor(Cursor):
 
     def set_visible(self, visible):
         self.dot.set_visible(visible)
+        if visible:
+            self.update_legend()
+        else:
+            self.clear_legend()
+        self.ax.figure.canvas.draw()
 
     def update_legend(self):
         if len(self.markers) >= 2:
             legend_elements = []
             for i, marker in enumerate(self.markers[-2:]):
                 x, y = marker.get_data()
-                label = f'Click {self.set_count-1 if i == 0 else self.set_count}: x={x[0]}, y={y[0]}'
+                label = f'Click {self.set_count-1 if i == 0 else self.set_count}: x={x[0]:.3f}, y={y[0]:.3f}'
                 legend_elements.append(Line2D([0], [0], marker='o', color='w', markerfacecolor=marker.get_color(), markersize=10, label=label))
             # Add legend for difference between the two clicks
             x1, y1 = self.markers[-2].get_data()
             x2, y2 = self.markers[-1].get_data()
             dx, dy = x2[0] - x1[0], y2[0] - y1[0]
-            legend_elements.append(Line2D([0], [0], marker='o', color='w', label=f'Difference: dx={dx}, dy={dy}'))
-            self.ax.legend(handles=legend_elements, bbox_to_anchor=(1, 1), loc='upper left', fontsize='small')
+            legend_elements.append(Line2D([0], [0], marker='o', color='w', label=f'Difference: dx={dx:.3f}, dy={dy:.3f}'))
+            self.legend_axes.legend(handles=legend_elements, loc='center', fontsize='small')
+
+                
 
     def clear_legend(self):
-        legend = self.ax.get_legend()
-        if legend:
+        legend = self.legend_axes.get_legend()
+        if legend is not None:
             legend.remove()
+
 
     def clear_markers(self):
         for m in self.markers:
