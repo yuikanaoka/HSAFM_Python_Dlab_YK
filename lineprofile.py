@@ -29,6 +29,7 @@ from PyQt5.QtCore import Qt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.widgets import CheckButtons, Button
 from  matplotlib.figure import Figure
+from matplotlib.lines import Line2D
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
@@ -275,9 +276,12 @@ class LineProfile:
                 nm_positions = [i * scaling_factor for i in range(len(values))]
                 print("nm_positions: ",len(nm_positions))
 
+                config.nm_positions=nm_positions
+                config.heightvalues=values
 
 
-                self.UpdatePlot(config.linewindow,config.figure,config.axes,nm_positions, values)
+
+                self.UpdatePlot(nm_positions, values)
 
                 self.s2 = True
                         
@@ -292,21 +296,22 @@ class LineProfile:
 
                
 
-    def UpdatePlot(self,profile_window,profile_figure,profile_axes,distance_ticks,profile_zvaluelist):
+    def UpdatePlot(self,distance_ticks,profile_zvaluelist):
         self.zvaluelist=profile_zvaluelist
-        self.line=profile_window
-        self.figure=profile_figure
-        self.axes=profile_axes
+        #config.linewindow,config.figure,config.axes
+        #self.line=profile_window
+        # self.figure=profile_figure
+        # self.axes=profile_axes
 
-        self.line.set_data(distance_ticks,self.zvaluelist)
-        self.line.set_color("red")
+        config.linewindow.set_data(distance_ticks,self.zvaluelist)
+        config.linewindow.set_color("red")
         #self.axes.set_xlim(max(distance_ticks),min(distance_ticks)) 
-        self.axes.set_xlim(min(distance_ticks),max(distance_ticks)) 
-        self.axes.set_ylim(min(self.zvaluelist),max(self.zvaluelist)+1)
+        config.axes.set_xlim(min(distance_ticks),max(distance_ticks)) 
+        config.axes.set_ylim(min(self.zvaluelist),max(self.zvaluelist)+1)
         #plt.gca().invert_yaxis()
-        self.figure.canvas.draw()
-        self.figure.canvas.flush_events()
-        self.figure.canvas.mpl_connect("close_event",self.CloseEvent)
+        config.figure.canvas.draw()
+        config.figure.canvas.flush_events()
+        config.figure.canvas.mpl_connect("close_event",self.CloseEvent)
     
     def MakeProfileData(self):
         self.dbg_echo()
@@ -323,6 +328,8 @@ class LineProfile:
         Cursor_chk_pos.set_axis_off()
         #self.Multipnt_chk = CheckButtons(Multi_chk_pos,['Multi-Point'])
         self.Cursor_chk = CheckButtons(Cursor_chk_pos,['Cursor']) # default status is False
+        self.cursor1=None
+        self.cursor2=None
         self.Cursor_chk.on_clicked(self.Cursor_chk_func)
         axReset = plt.axes([0.38, 0.9, 0.1, 0.05])
         self.bnext = Button(axReset, 'Reset',color = "white")
@@ -368,26 +375,110 @@ class LineProfile:
     def point_insert(self):
         print("greetings")
     
-    def Cursor_chk_func(self,label):
+    def Cursor_chk_func(self, label):
         cursor_checked = self.Cursor_chk.get_status()[0]
-        self.line =config.linewindow
-        self.figure=config.figure
-        self.axes=config.axes
 
         if cursor_checked:
             print("Cursor_chk_func")
-            cursor = Cursor(self.axes, useblit=True, color='red', linewidth=1)  # カーソルの作成例
-        else:  # カーソルのチェックが外れた場合の処理
-            # カーソルを削除するコードをここに記述する
+
+            # If cursor does not exist, create it
+            if self.cursor1 is None:
+                self.cursor1 = SnaptoCursor(config.axes, config.nm_positions, config.heightvalues)
+                config.figure.canvas.mpl_connect('button_press_event', self.cursor1.onclick)
+
+            # Show the dot and activate the cursor
+            self.cursor1.set_visible(True)
+            self.cursor1.activate()
+        else:
             print("Cursor_chk_func else")
-            cursor = None  # カーソルオブジェクトを削除する
-        
-        self.figure.canvas.draw()  # グラフを再描画する
-        self.figure.canvas.flush_events()
-        self.figure.canvas.mpl_connect("close_event",self.CloseEvent)
-        
 
+            # Hide the dot, deactivate the cursor, and clear the previous markers and legend
+            if self.cursor1 is not None:
+                self.cursor1.set_visible(False)
+                self.cursor1.deactivate()
+                self.cursor1.clear_markers()
+                self.cursor1.clear_legend()
 
+        config.figure.canvas.draw()
+        config.figure.canvas.flush_events()
+        config.figure.canvas.mpl_connect("close_event", self.CloseEvent)
 
+from matplotlib.lines import Line2D
+import numpy as np
+from matplotlib.widgets import Cursor
 
-   
+class SnaptoCursor(Cursor):
+    def __init__(self, ax, x, y, **kwargs):
+        super().__init__(ax, **kwargs)
+        self.x = x
+        self.y = y
+        self.dot, = ax.plot(0, 0, 'bo', markersize=10)
+        self.dot.set_visible(False)
+        self.markers = []  # list to store markers
+        self.set_count = 0  # counter to track click sets
+        self.active = False  # cursor is inactive by default
+
+    def activate(self):
+        self.active = True
+
+    def deactivate(self):
+        self.active = False
+
+    def onmove(self, event):
+        if not self.active:
+            return
+        if event.inaxes == self.ax:
+            x, y = event.xdata, event.ydata
+            ind = np.argmin(np.hypot(x - self.x, y - self.y))
+            self.dot.set_data(self.x[ind], self.y[ind])
+            self._update()
+            self.ax.figure.canvas.draw()
+
+    def onclick(self, event):
+        if not self.active:
+            return
+        if event.inaxes == self.ax:
+            x, y = event.xdata, event.ydata
+            ind = np.argmin(np.hypot(x - self.x, y - self.y))
+            color = 'green' if self.set_count % 2 == 0 else 'yellow'
+            marker = self.ax.plot(self.x[ind], self.y[ind], 'o', color=color, markersize=10)[0]
+            self.markers.append(marker)
+            if self.set_count >= 1 and self.set_count % 2 != 0:
+                # Remove markers and legend for the previous set
+                for m in self.markers[:-2]:
+                    m.remove()
+                self.markers = self.markers[-2:]
+                legend = self.ax.get_legend()
+                if legend:
+                    legend.remove()
+            self.update_legend()
+            self.ax.figure.canvas.draw()
+            self.set_count += 1
+
+    def set_visible(self, visible):
+        self.dot.set_visible(visible)
+
+    def update_legend(self):
+        if len(self.markers) >= 2:
+            legend_elements = []
+            for i, marker in enumerate(self.markers[-2:]):
+                x, y = marker.get_data()
+                label = f'Click {self.set_count-1 if i == 0 else self.set_count}: x={x[0]}, y={y[0]}'
+                legend_elements.append(Line2D([0], [0], marker='o', color='w', markerfacecolor=marker.get_color(), markersize=10, label=label))
+            # Add legend for difference between the two clicks
+            x1, y1 = self.markers[-2].get_data()
+            x2, y2 = self.markers[-1].get_data()
+            dx, dy = x2[0] - x1[0], y2[0] - y1[0]
+            legend_elements.append(Line2D([0], [0], marker='o', color='w', label=f'Difference: dx={dx}, dy={dy}'))
+            self.ax.legend(handles=legend_elements, bbox_to_anchor=(1, 1), loc='upper left', fontsize='small')
+
+    def clear_legend(self):
+        legend = self.ax.get_legend()
+        if legend:
+            legend.remove()
+
+    def clear_markers(self):
+        for m in self.markers:
+            m.remove()
+        self.markers = []  # Reset the markers list
+        self.set_count = 0  # Reset the click count

@@ -123,6 +123,9 @@ linewindow=None
 figure=None
 axes=None
 
+nm_positions = None
+heightvalues = None
+
 
 # pdb display
 pdbdata = None
